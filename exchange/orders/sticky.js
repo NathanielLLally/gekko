@@ -36,6 +36,7 @@ class StickyOrder extends BaseOrder {
     if(_.isFunction(this.api.outbidPrice)) {
       this.outbidPrice = this.api.outbidPrice.bind(this.api);
     }
+    this.initialized = false;
   }
 
   create(side, rawAmount, params = {}) {
@@ -89,6 +90,8 @@ class StickyOrder extends BaseOrder {
       });
     }
 
+    this.emit('postInit');
+    this.initialized = true;
     return this;
   }
 
