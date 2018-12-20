@@ -8,18 +8,27 @@ const emitter = require('../../core/emitterClass.js');
 const log = require(dirs.core + 'log');
 const Broker = require(dirs.broker + 'gekkoBroker');
 
+
 require(dirs.gekko + '/exchange/dependencyCheck');
 
 class Trader extends emitter.GekkoEventEmitter {
 
-  constructor (PpostSyncCB) { 
+  constructor (PpostSyncCB, exchangeName) { 
     super();
     _.bindAll(this);
 
+    var traderConfig = config.trader;
+    var watchConfig = config.watch;
+    if (_.has(config.trader, exchangeName)) {
+      traderConfig = config.trader[exchangeName];
+    }
+    if (_.has(config.watch, exchangeName)) {
+      watchConfig = config.watch[exchangeName];
+    }
     //TODO: make collection keyed by exchange/wrapper/this.name
     this.brokerConfig = {
-      ...config.trader,
-      ...config.watch,
+      ...traderConfig,
+      ...watchConfig,
       private: true
     }
 

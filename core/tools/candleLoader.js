@@ -12,7 +12,7 @@ const dirs = util.dirs();
 const log = require(dirs.core + '/log');
 
 const adapter = config[config.adapter];
-const Reader = require(dirs.gekko + adapter.path + '/reader');
+const Reader = require(dirs.gekko + '/plugins/postgres/reader.js');
 const daterange = config.daterange;
 
 const CandleBatcher = require(dirs.core + 'candleBatcher');

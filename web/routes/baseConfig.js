@@ -17,11 +17,11 @@ config.tradingAdvisor = {
 }
 
 config.candleWriter = {
-  enabled: false
+  enabled: true
 }
 
 config.backtestResultExporter = {
-  enabled: false,
+  enabled: true,
   writeToDisk: false,
   data: {
     stratUpdates: false,
@@ -32,7 +32,7 @@ config.backtestResultExporter = {
 }
 
 config.childToParent = {
-  enabled: false,
+  enabled: true,
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -57,8 +57,8 @@ config.sqlite = {
 config.postgresql = {
   path: 'plugins/postgresql',
   version: 0.1,
-  connectionString: 'postgres://user:pass@localhost:5432', // if default port
-  database: null, // if set, we'll put all tables into a single database.
+  connectionString: 'postgres://postgres@mx.ewb.ai:5432', // if default port
+  database: 'gekko', // if set, we'll put all tables into a single database.
   schema: 'public',
   dependencies: [{
     module: 'pg',
@@ -97,7 +97,7 @@ config.backtest = {
 config.importer = {
   daterange: {
     // NOTE: these dates are in UTC
-    from: "2016-06-01 12:00:00"
+    from: "2017-07-01 00:00:00"
   }
 }
 

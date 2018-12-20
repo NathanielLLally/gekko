@@ -9,7 +9,6 @@ const moment = require('moment');
 //const exchangeUtils = require('./exchangeUtils');
 //const bindAll = exchangeUtils.bindAll;
 const log = require(dirs.core + 'log');
-const Broker = require(dirs.broker + 'gekkoBroker');
 const Trader = require(dirs.plugins + 'trader/trader').Trader;
 const JSON = require('JSON');
 
@@ -22,13 +21,14 @@ const config = util.getConfig();
 
 
 if (_.has(config, 'list_update_import')) {
-  console.log("has configured exchanges: ");
+  console.log("has configured exchanges: "+JSON.stringify(config.list_update_import));
 }
 
 //exchange/util/genMarketFiles
 
 //main
-var trader = new Trader(() => {});
+console.log(JSON.stringify(config.watch.gdax));
+var trader = new Trader(() => {}, "gdax");
 
 trader.init();
 

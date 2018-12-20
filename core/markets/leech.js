@@ -12,7 +12,7 @@ const config = util.getConfig();
 const exchangeChecker = require(dirs.gekko + 'exchange/exchangeChecker');
 
 const adapter = config[config.adapter];
-const Reader = require(dirs.gekko + adapter.path + '/reader');
+const Reader = require(dirs.gekko + '/plugins/postgres/reader.js');
 
 const TICKINTERVAL = 20 * 1000; // 20 seconds
 
