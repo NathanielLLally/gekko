@@ -26,8 +26,8 @@ const config = util.getConfig();
 //cache.set("test", require("moment"));
 //console.log("moment: "+util.inspect(cache.get("test"),{showHidden: false, depth: null}));
 
-const m = require(dirs.plugins +'apiKeyManager');
-const creds = m._getApiKeyPair(config.watch.exchange);
+//const m = require(dirs.plugins +'apiKeyManager');
+//const creds = m._getApiKeyPair(config.watch.exchange);
 
 log.debug("node version :"+util.getRequiredNodeVersion());
 //todo, override Trader constructor for config.trader to use creds

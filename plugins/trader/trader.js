@@ -13,6 +13,15 @@ require(dirs.gekko + '/exchange/dependencyCheck');
 
 class Trader extends emitter.GekkoEventEmitter {
 
+  static create(PpostSyncCB, exchangeName) {
+    return function() {
+      const args = [].slice.apply(arguments);
+      let t = new Trader((PpostSyncCB) => {}, exchangeName);
+      t.init();
+      return t;
+    };
+  }
+
   constructor (PpostSyncCB, exchangeName) { 
     super();
     _.bindAll(this);
@@ -22,8 +31,8 @@ class Trader extends emitter.GekkoEventEmitter {
     if (_.has(config.trader, exchangeName)) {
       traderConfig = config.trader[exchangeName];
     }
-    if (_.has(config.watch, exchangeName)) {
-      watchConfig = config.watch[exchangeName];
+    if (_.has(config.multiwatch,exchangeName)) {
+      watchConfig = config.multiwatch[exchangeName];
     }
     //TODO: make collection keyed by exchange/wrapper/this.name
     this.brokerConfig = {
@@ -39,6 +48,7 @@ class Trader extends emitter.GekkoEventEmitter {
     this.sendInitialPortfolio = false;
     this.postSyncCB = PpostSyncCB;
     this.exposed = false;
+    this.exchangeName = exchangeName;
   }
 
   init () {
@@ -446,6 +456,6 @@ cancelOrder(id, advice, next) {
 
 }
 
-module.exports = {
-  Trader: Trader
-}
+Object.setPrototypeOf(Trader.prototype, emitter.GekkoEventEmitter.prototype);
+module.exports = Trader
+//module.exports = { Trader: Trader }

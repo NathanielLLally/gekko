@@ -44,6 +44,8 @@ class Broker {
 
     const slug = config.exchange.toLowerCase();
 
+    console.log('new broker config with '+slug);
+
     const API = require('./wrappers/' + slug);
 
     this.api = new API(config);

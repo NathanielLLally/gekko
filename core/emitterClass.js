@@ -31,6 +31,7 @@ class GekkoEventEmitter extends NativeEventEmitter {
   }
 }
 
+Object.setPrototypeOf(GekkoEventEmitter.prototype, NativeEventEmitter.prototype);
 module.exports = {
   GekkoEventEmitter: GekkoEventEmitter
 }
