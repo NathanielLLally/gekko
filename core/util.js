@@ -17,10 +17,14 @@ var _args = false;
 
 // helper functions
 var util = {
-  getConfig: function() {
+  getConfig: function(Pkey) {
+    var key = 'registry';
+    if (Pkey != null)
+      key = Pkey;
+      
     // cache
     if(_config)
-      return _config;
+      return _config[key];
 
     if(!program.config)
         util.die('Please specify a config file.', true);

@@ -15,9 +15,9 @@ var util = require('./util');
 var dirs = util.dirs();
 
 var _ = require('lodash');
+var async = require('async');
 
 var log = require(dirs.core + 'log');
-const async = require('async');
 
 class Pipeline {
   constructor(settings) {
@@ -25,7 +25,6 @@ class Pipeline {
 
     this.mode = settings.mode;
     this.config = settings.config;
-    this.key = settings.key;
 
 
     // all plugins
@@ -45,54 +44,12 @@ class Pipeline {
     // meta information about the events plugins can broadcast
     // and how they should hooked up to consumers.
     this.subscriptions = null;
-
     this.market = null;
   }
-  init() {
-    var self = this;
-    this.GekkoStream = require(dirs.core + 'gekkoStream');
-    this.pluginHelper = require(dirs.core + 'pluginUtil');
-    this.pluginParameters = require(dirs.gekko + 'plugins');
-    this.subscriptions = require(dirs.gekko + 'subscriptions');
 
-    this.market = null;
-    log.info('Setting up Gekko instance in', this.mode, 'mode');
-    log.info('');
-  }
-}
-
-class PipelineFactory {
-
-  /*
- let result = await Promise.all(_.map(responseJson, addEnabledProperty)); 
-   */
-  static async create(settings) {
-    let self = null;
-    try {
-      self = new Pipeline(await Promise.resolve(settings));
-    } catch (rejectedValue) {
-      log.error("pipelineFactory.createInit borked, ",rejectedValue);
-      return util.die(rejectedValue, true);
-    }
-    return self;
-  }
   // Instantiate each enabled plugin
-  static loadPlugins(self) {
-    /*
+  static loadPlugins(self,next) {
     // load all plugins
-    try {
-      let result = await Promise.all(_.map(
-        self.pluginParameters,
-        self.pluginHelper.load
-      ));
-    } catch (e) {
-      throw(e);
-    }
-    self.plugins = _.compact(_plugins);
-    */
-    _.map(self.pluginParameters, (o) => {
-      o.self = self;
-    });
     async.mapSeries(
       self.pluginParameters,
       self.pluginHelper.load,
@@ -101,25 +58,25 @@ class PipelineFactory {
           return util.die(error, true);
 
         self.plugins = _.compact(_plugins);
+        next();
       }
     );
   }
 
   // Some plugins emit their own events, store
   // a reference to those plugins.
-  static referenceEmitters(self) {
-//    var self = this;
+  static referenceEmitters(self, next) {
+
     _.each(self.plugins, function(plugin) {
       if(plugin.meta.emits)
         self.emitters[plugin.meta.slug] = plugin;
     });
 
-    //next();
+    next();
   }
 
   // Subscribe all plugins to other emitting plugins
-  static subscribePlugins(self) {
-//    var self = this;
+  static subscribePlugins(self, next) {
     // events broadcasted by plugins
     var pluginSubscriptions = _.filter(
       self.subscriptions,
@@ -212,21 +169,17 @@ class PipelineFactory {
       });
     });
 
-    //next();
+    next();
   }
 
-  static prepareMarket(self) {
-    if(self.mode === 'backtest' && self.config.backtest.daterange === 'scan')
-      require(dirs.core + 'prepareDateRange')();
-    /*
-    if(self.mode === 'backtest' && self.config.backtest.daterange === 'scan')
+  static prepareMarket(self, next) {
+    if(mode === 'backtest' && self.config.backtest.daterange === 'scan')
       require(dirs.core + 'prepareDateRange')(next);
     else
       next();
-      */
   }
 
-  static setupMarket(self) {
+  static setupMarket(self, next) {
     // load a market based on the config (or fallback to mode)
     let marketType;
     if(self.config.market)
@@ -237,10 +190,12 @@ class PipelineFactory {
     var Market = require(dirs.markets + marketType);
 
     self.market = new Market(self.config);
+
+    next();
   }
 
-  static subscribePluginsToMarket(self) {
-//    var self = this;
+  static subscribePluginsToMarket(self, next) {
+
     // events broadcasted by the market
     var marketSubscriptions = _.filter(
       self.subscriptions,
@@ -261,49 +216,57 @@ class PipelineFactory {
       });
     });
 
+    next();
+
   }
 
-  static async createInit(settings) {
-    let self = null;
-    try {
-      self = new Pipeline(await Promise.resolve(settings));
-    } catch (rejectedValue) {
-      log.error("pipelineFactory.createInit borked, ",rejectedValue);
-      util.die(rejectedValue, true);
-    }
-    self.init();
-
-    /*
-    try {
-      await PipelineFactory.loadPlugins(self);
-    } catch (e) {
-      util.die("createInit: "+e, true);
-    }
-    */
-
-    PipelineFactory.loadPlugins(self);
-    PipelineFactory.referenceEmitters(self);
-    PipelineFactory.subscribePlugins(self);
-    PipelineFactory.prepareMarket(self);
-    PipelineFactory.setupMarket(self);
-    PipelineFactory.subscribePluginsToMarket(self);
-
-    var gekkoStream = new self.GekkoStream(self.plugins);
-
-    self.market
-      .pipe(gekkoStream)
-
-    // convert JS objects to JSON string
-    // .pipe(new require('stringify-stream')())
-    // output to standard out
-    // .pipe(process.stdout);
-
-    self.market.on('end', gekkoStream.finalize);
-    return self;
+  static pipeline() {
+    const args = [].slice.apply(arguments);
+    return create(args);
   }
+  static create(settings) {
+    var p = new Pipeline(settings);
+    p.init();
+    return p;
+  }
+
+  init() {
+    var self = this;
+    this.GekkoStream = require(dirs.core + 'gekkoStream');
+    this.pluginHelper = require(dirs.core + 'pluginUtil');
+    this.pluginParameters = require(dirs.gekko + 'plugins');
+    this.subscriptions = require(dirs.gekko + 'subscriptions');
+
+    this.market = null;
+    log.info('Setting up Gekko instance in', this.mode, 'mode');
+    log.info('');
+
+    async.series(
+      [
+        Pipeline.loadPlugins,
+        Pipeline.referenceEmitters,
+        Pipeline.subscribePlugins,
+        Pipeline.prepareMarket,
+        Pipeline.setupMarket,
+        Pipeline.subscribePluginsToMarket
+      ],
+      function() {
+
+        var gekkoStream = new GekkoStream(self.plugins);
+
+        self.market
+          .pipe(gekkoStream)
+
+        // convert JS objects to JSON string
+        // .pipe(new require('stringify-stream')())
+        // output to standard out
+        // .pipe(process.stdout);
+
+        market.on('end', gekkoStream.finalize);
+      }
+    );
+  }
+  
 }
 
-module.exports = {
-  Pipeline: Pipeline,
-  PipelineFactory: PipelineFactory
-}
+module.exports = Pipeline;
