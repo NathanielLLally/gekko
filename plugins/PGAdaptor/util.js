@@ -17,17 +17,6 @@ function init() {
 }
 
 /**
- * Returns true if we use single database where
- * all our tables are stored. The default is to store
- * every exchange into it's own db.
- *
- * Set config.postgresql.database to use single db setup
- */
-function useSingleDatabase() {
-    return !!config.postgresql.database;
-}
-
-/**
  * Postgres has tables in lowercase if you don't
  * escape their names. Which we don't and so let's
  * just lowercase them.
@@ -36,28 +25,13 @@ function useLowerCaseTableNames() {
   return !config.postgresql.noLowerCaseTableName;
 }
 
-module.exports = {
-  key: key,
-  settings: settings,
-
-  // true if we have single db setup (see postrgesql.database config key)
-  useSingleDatabase: useSingleDatabase,
-
   // returns DB name (depends on single db setup)
   database: function () {
     init();
-    return useSingleDatabase() ?
       config.postgresql.database :
-      config.watch.exchange.toLowerCase().replace(/\-/g,'');
-  },
 
-  // returns table name which can be different if we use
-  // single or multiple db setup.
   table: function (name) {
-    init();
-    if (useSingleDatabase()) {
       name = watch.exchange.replace(/\-/g,'') + '_' + name;
-    }
     var fullName = [name, settings.pair.join('_')].join('_');
     return useLowerCaseTableNames() ? fullName.toLowerCase() : fullName;
   },
