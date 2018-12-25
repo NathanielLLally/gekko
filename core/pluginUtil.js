@@ -9,112 +9,139 @@ var log = require(util.dirs().core + 'log');
 var config = util.getConfig();
 var pluginDir = util.dirs().plugins;
 var gekkoMode = util.gekkoMode();
+
+var inherits = function (ctor, superCtor) { 
+  
+   if (ctor === undefined || ctor === null) 
+     throw new ERR_INVALID_ARG_TYPE('ctor', 'Function', ctor); 
+  
+   if (superCtor === undefined || superCtor === null) 
+     throw new ERR_INVALID_ARG_TYPE('superCtor', 'Function', superCtor); 
+  
+   if (superCtor.prototype === undefined) { 
+     throw new ERR_INVALID_ARG_TYPE('superCtor.prototype', 
+                                    'Function', superCtor.prototype); 
+   } 
+   ctor.super_ = superCtor; 
+//  ctor.prototype.__proto__ = Object.create(superCtor.prototype)
+   Object.setPrototypeOf(ctor.prototype, superCtor.prototype); 
+//     ctor.prototype = Object.create(superCtor.prototype);
+   } 
 var inherits = require('util').inherits;
 
-var pluginHelper = {
-  // Checks whether we can load a module
+  var pluginHelper = {
+    // Checks whether we can load a module
 
-  // @param Object plugin
-  //    plugin config object
-  // @return String
-  //    error message if we can't
-  //    use the module.
-  cannotLoad: function(plugin) {
+    // @param Object plugin
+    //    plugin config object
+    // @return String
+    //    error message if we can't
+    //    use the module.
+    cannotLoad: function(plugin) {
 
-    // verify plugin dependencies are installed
-    if(_.has(plugin, 'dependencies'))
-      var error = false;
+      // verify plugin dependencies are installed
+      if(_.has(plugin, 'dependencies'))
+        var error = false;
 
-      _.each(plugin.dependencies, function(dep) {
-        try {
-          var a = require(dep.module);
-        }
-        catch(e) {
-          log.error('ERROR LOADING DEPENDENCY', dep.module);
-
-          if(!e.message) {
-            log.error(e);
-            util.die();
+        _.each(plugin.dependencies, function(dep) {
+          try {
+            var a = require(dep.module);
           }
+          catch(e) {
+            log.error('ERROR LOADING DEPENDENCY', dep.module);
 
-          if(!e.message.startsWith('Cannot find module'))
-            return util.die(e);
+            if(!e.message) {
+              log.error(e);
+              util.die();
+            }
 
-          error = [
-            'The plugin',
-            plugin.slug,
-            'expects the module',
-            dep.module,
-            'to be installed.',
-            'However it is not, install',
-            'it by running: \n\n',
-            '\tnpm install',
-            dep.module + '@' + dep.version
-          ].join(' ');
-        }
-      });
+            if(!e.message.startsWith('Cannot find module'))
+              return util.die(e);
 
-    return error;
-  },
-  // loads a plugin
-  // 
-  // @param Object plugin
-  //    plugin config object
-  // @param Function next
-  //    callback
-  load: function(plugin, next) {
+            error = [
+              'The plugin',
+              plugin.slug,
+              'expects the module',
+              dep.module,
+              'to be installed.',
+              'However it is not, install',
+              'it by running: \n\n',
+              '\tnpm install',
+              dep.module + '@' + dep.version
+            ].join(' ');
+          }
+        });
 
-    plugin.config = config[plugin.slug];
+      return error;
+    },
+    // loads a plugin
+    // 
+    // @param Object plugin
+    //    plugin config object
+    // @param Function next
+    //    callback
+    load: function(plugin, next, pipe_config) {
 
-    if(!plugin.config || !plugin.config.enabled)
-      return next();
+//      console.log('ph.load');
+//      console.log([].slice.apply(arguments))
 
-    if(!_.contains(plugin.modes, gekkoMode)) {
-      log.warn(
-        'The plugin',
-        plugin.name,
-        'does not support the mode',
-        gekkoMode + '.',
-        'It has been disabled.'
-      )
-      return next();
+      plugin.config = config[plugin.slug];
+
+      if(!plugin.config || !plugin.config.enabled)
+        return next();
+
+      if(!_.contains(plugin.modes, gekkoMode)) {
+        log.warn(
+          'The plugin',
+          plugin.name,
+          'does not support the mode',
+          gekkoMode + '.',
+          'It has been disabled.'
+        )
+        return next();
+      }
+
+      log.info('Setting up:');
+      log.info('\t', plugin.name);
+      log.info('\t', plugin.description);
+
+      var cannotLoad = pluginHelper.cannotLoad(plugin);
+      if(cannotLoad)
+        return next(cannotLoad);
+
+      if(plugin.path)
+        var Constructor = require(pluginDir + plugin.path(config));
+      else
+        var Constructor = require(pluginDir + plugin.slug);
+
+      if(plugin.async) {
+        try {
+          inherits(Constructor, Emitter);
+        } catch {
+          //TODO handle the event where class is exported as {}
+
+
+        };
+        var instance = new Constructor(util.defer(function(err) {
+          next(err, instance, pipe_config);
+        }), plugin, pipe_config);
+        Emitter.call(instance);
+
+        instance.meta = plugin;
+      } else {
+        inherits(Constructor, Emitter);
+        var instance = new Constructor(plugin, pipe_config);
+        Emitter.call(instance);
+
+        instance.meta = plugin;
+        _.defer(function() {
+          next(null, instance); 
+        });
+      }
+
+      if(!plugin.silent)
+        log.info('\n');
     }
-
-    log.info('Setting up:');
-    log.info('\t', plugin.name);
-    log.info('\t', plugin.description);
-
-    var cannotLoad = pluginHelper.cannotLoad(plugin);
-    if(cannotLoad)
-      return next(cannotLoad);
-
-    if(plugin.path)
-      var Constructor = require(pluginDir + plugin.path(config));
-    else
-      var Constructor = require(pluginDir + plugin.slug);
-
-    if(plugin.async) {
-      inherits(Constructor, Emitter);
-      var instance = new Constructor(util.defer(function(err) {
-        next(err, instance);
-      }), plugin);
-      Emitter.call(instance);
-
-      instance.meta = plugin;
-    } else {
-      inherits(Constructor, Emitter);
-      var instance = new Constructor(plugin);
-      Emitter.call(instance);
-
-      instance.meta = plugin;
-      _.defer(function() {
-        next(null, instance); 
-      });
-    }
-
-    if(!plugin.silent)
-      log.info('\n');
   }
-}
 
-module.exports = pluginHelper;
+  module.exports = pluginHelper;

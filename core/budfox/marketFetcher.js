@@ -60,7 +60,7 @@ const Fetcher = function(config) {
   // we will keep on retrying until next
   // scheduled fetch.
   this.tries = 0;
-  this.limit = 20; // [TODO]
+  this.limit = 1; // [TODO]
 
   this.firstFetch = true;
 

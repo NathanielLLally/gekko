@@ -17,16 +17,16 @@ var dirs = util.dirs();
 var _ = require('lodash');
 
 var log = require(dirs.core + 'log');
-const async = require('async');
+const async = require('async')
+  , JSON = require('JSON')
+;
 
 class Pipeline {
   constructor(settings) {
     _.bindAll(this);
 
     this.mode = settings.mode;
-    this.config = settings.config;
-    this.key = settings.key;
-
+    this.config = {...settings.config};
 
     // all plugins
     this.plugins = [];
@@ -49,7 +49,6 @@ class Pipeline {
     this.market = null;
   }
   init() {
-    var self = this;
     this.GekkoStream = require(dirs.core + 'gekkoStream');
     this.pluginHelper = require(dirs.core + 'pluginUtil');
     this.pluginParameters = require(dirs.gekko + 'plugins');
@@ -66,16 +65,6 @@ class PipelineFactory {
   /*
  let result = await Promise.all(_.map(responseJson, addEnabledProperty)); 
    */
-  static async create(settings) {
-    let self = null;
-    try {
-      self = new Pipeline(await Promise.resolve(settings));
-    } catch (rejectedValue) {
-      log.error("pipelineFactory.createInit borked, ",rejectedValue);
-      return util.die(rejectedValue, true);
-    }
-    return self;
-  }
   // Instantiate each enabled plugin
   static loadPlugins(self) {
     /*
@@ -90,12 +79,19 @@ class PipelineFactory {
     }
     self.plugins = _.compact(_plugins);
     */
-    _.map(self.pluginParameters, (o) => {
-      o.self = self;
-    });
+//    _.map(self.pluginParameters, (o) => {
+//      console.log(o);
+      //o.config = Object.assign(o.config, self.config)
+//    });
+
+//    console.log(self.pluginParameters);
+
     async.mapSeries(
       self.pluginParameters,
-      self.pluginHelper.load,
+      function (params, cb) {
+//        console.log('factoryMapSeries',self.config);
+        return self.pluginHelper.load(params, cb, self.config)
+      },
       function(error, _plugins) {
         if(error)
           return util.die(error, true);
@@ -263,15 +259,25 @@ class PipelineFactory {
 
   }
 
-  static async createInit(settings) {
-    let self = null;
+  static create(settings) {
+//    console.log('funkyAsync',settings);
+    var self = null;
     try {
-      self = new Pipeline(await Promise.resolve(settings));
+      self = new Pipeline(settings);
     } catch (rejectedValue) {
       log.error("pipelineFactory.createInit borked, ",rejectedValue);
-      util.die(rejectedValue, true);
+      return util.die(rejectedValue, true);
     }
+//    console.log('postFunky', self.config);
+    return self;
+  }
+
+  static createInit(settings) {
+//    console.log('funkyAsync',settings);
+    let self = PipelineFactory.create(settings);
+//    console.log('postFunky',self.config);
     self.init();
+
 
     /*
     try {

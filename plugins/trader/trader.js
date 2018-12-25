@@ -5,17 +5,20 @@ const moment = require('moment');
 const emitter = require('../../core/emitterClass.js');
 
 const log = require(dirs.core + 'log');
-const Broker = require(dirs.broker + 'gekkoBroker');
+//const Broker = require(dirs.broker + 'gekkoBroker');
+const BrokerFactory = require(dirs.broker + 'brokerFactory');
 
 
 require(dirs.gekko + '/exchange/dependencyCheck');
 
+
+var _instances;
 class Trader extends emitter.GekkoEventEmitter {
 
-  static create(PpostSyncCB, exchangeName) {
+  static create(PpostSyncCB, exchangeName, Pconfig) {
     return function() {
       const args = [].slice.apply(arguments);
-      let t = new Trader((PpostSyncCB) => {}, exchangeName);
+      let t = new Trader((PpostSyncCB) => {}, exchangeName, Pconfig);
       t.init();
       return t;
     };
@@ -31,8 +34,8 @@ class Trader extends emitter.GekkoEventEmitter {
 
     var traderConfig = this.config.trader;
     var watchConfig = this.config.watch;
-    if (_.has(this.config.trader, exchangeName)) {
-      traderConfig = this.config.trader[exchangeName];
+    if (_.has(this.config.multitrader, exchangeName)) {
+      traderConfig = this.config.multitrader[exchangeName];
     }
     if (_.has(this.config.multiwatch,exchangeName)) {
       watchConfig = this.config.multiwatch[exchangeName];
@@ -52,12 +55,17 @@ class Trader extends emitter.GekkoEventEmitter {
     this.postSyncCB = PpostSyncCB;
     this.exposed = false;
     this.exchangeName = exchangeName;
+    this.currency = this.brokerConfig.currency.toUpperCase(); 
+    this.asset = this.brokerConfig.asset.toUpperCase(); 
+  }
+  market() {
+    return this.brokerConfig.currency.toUpperCase() + this.brokerConfig.asset.toUpperCase();
   }
 
   init () {
     //TODO: see config comment
     try {
-      this.broker = new Broker(this.brokerConfig);
+      this.broker = BrokerFactory.create(this.brokerConfig);
     } catch(e) {
       util.die(e.message);
     }
@@ -65,6 +73,8 @@ class Trader extends emitter.GekkoEventEmitter {
     if(!this.broker.capabilities.gekkoBroker) {
       util.die('This exchange is not yet supported');
     }
+
+    console.log("new trader ", this.brokerConfig);
     setInterval(this.sync, 1000 * 60 * 10);
 
     this.sync ( () =>  {

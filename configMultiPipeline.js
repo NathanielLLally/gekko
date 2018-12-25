@@ -2,7 +2,6 @@
 // @link https://gekko.wizb.it/docs/commandline/plugins.html
 
 var config = {};
-var registry = {registry: config};
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //                          GENERAL SETTINGS
@@ -51,25 +50,6 @@ config.multitrader = {
     username: '', // your username, only required for specific exchanges.
     passphrase: '', // GDAX, requires a passphrase.
   },
-}
-
-config.multiwatch = {
-  gdax: {
-    exchange: 'gdax',
-    currency: 'USD',
-    asset: 'BTC',
-  },
-  /*
-  binance: {
-    exchange: 'binance',
-    currency: 'USDT',
-    asset: 'BTC',
-  },
-  */
-  // You can set your own tickrate (refresh rate).
-  // If you don't set it, the defaults are 2 sec for
-  // okcoin and 20 sec for all other exchanges.
-  // tickrate: 20
 }
 
 config.importer = {
@@ -322,19 +302,6 @@ config.ifttt = {
   sendMessageOnStart: true
 }
 
-config.candleWriter = {
-  enabled: true
-}
-config.multiCandleWriter = {
-  enabled: false
-}
-
-
-config.adviceWriter = {
-  enabled: true,
-  muteSoft: true,
-}
-
 config.backtestResultExporter = {
   enabled: true,
   writeToDisk: true,
@@ -351,26 +318,15 @@ config.backtestResultExporter = {
 //                       CONFIGURING ADAPTER
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-config.adapter = 'postgresql';
+config.adapter = 'PGAdapter';
 
-config.sqlite = {
-  path: 'plugins/sqlite',
-
-  dataDirectory: 'history',
-  version: 0.1,
-
-  journalMode: require('./web/isWindows.js') ? 'DELETE' : 'WAL',
-
-  dependencies: []
-}
-
-  // Postgres adapter example config (please note: requires postgres >= 9.5):
-config.postgresql = {
-  path: 'plugins/postgresql',
+config.PGAdapter = {
+  path: 'plugins/PGAdapter',
   version: 0.1,
   connectionString: 'postgres://postgres@mx.ewb.ai:5432', // if default port
   database: 'gekko', // if set, we'll put all tables into a single database.
   schema: 'public',
+  tableNamingDelimiter: '_',
   dependencies: [{
     module: 'pg',
     version: '7.4.3'
@@ -386,6 +342,15 @@ config.mongodb = {
     module: 'mongojs',
     version: '2.4.0'
   }]
+}
+
+config.candleWriter = {
+  enabled: true
+}
+
+config.adviceWriter = {
+  enabled: true,
+  muteSoft: true,
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -580,4 +545,4 @@ config['tulip-adx'] = {
 config['I understand that Gekko only automates MY OWN trading strategies'] = true;
 
 //module.exports = config;
-module.exports = registry;
+module.exports = config;

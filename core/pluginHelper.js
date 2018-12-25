@@ -80,7 +80,7 @@ var inherits = require('util').inherits;
     //    plugin config object
     // @param Function next
     //    callback
-    load: async function(plugin) {
+    load: async function(plugin, config) {
 
       plugin.config = config[plugin.slug];
 

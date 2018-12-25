@@ -18,13 +18,14 @@ var _args = false;
 // helper functions
 var util = {
   getConfig: function(Pkey) {
-    var key = 'registry';
-    if (Pkey != null)
-      key = Pkey;
+    key = Pkey;
       
     // cache
-    if(_config)
+    if(_.has(_config, key))
       return _config[key];
+
+    if(_config)
+      return _config;
 
     if(!program.config)
         util.die('Please specify a config file.', true);
@@ -33,7 +34,10 @@ var util = {
       util.die('Cannot find the specified config file.', true);
 
     _config = require(util.dirs().gekko + program.config);
-    return _config;
+    if(_.has(_config, key))
+      return _config[key];
+    else
+      return _config;
   },
   // overwrite the whole config
   setConfig: function(config) {
@@ -90,6 +94,7 @@ var util = {
     var log = console.log.bind(console);
 
     if(m) {
+      log(new Error().stack);
       if(soft) {
         log('\n ERROR: ' + m + '\n\n');
       } else {
