@@ -234,6 +234,8 @@ class PGAdapter {
 }
 
 var generator = function(done, pluginMeta, pipe_config) {
+  if (pipe_config == null)
+    pipe_config = config;
 //console.log('PGAdapter.generator',done, pluginMeta, pipe_config[config.adapter]);
   if(config.candleWriter.enabled) {
 //    await PGAdapter.createInit(config);

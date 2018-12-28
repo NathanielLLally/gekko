@@ -1,12 +1,11 @@
-var _ = require('lodash');
-var util = require('../../core/util.js');
-var config = util.getConfig();
-var log = require(util.dirs().core + 'log');
-
-var handle = require('./handle');
-var postgresUtil = require('./util');
-
-const { Query } = require('pg');
+const _ = require('lodash')
+ , util = require('../../core/util.js')
+ , config = util.getConfig()
+ , log = require(util.dirs().core + 'log')
+ , handle = require('./handle')
+ , PGAdapter = require('./util')
+ , { Query } = require('pg')
+;
 
 var Reader = function() {
   _.bindAll(this);

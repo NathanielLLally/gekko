@@ -11,7 +11,12 @@ var dirs = util.dirs();
 var log = require(dirs.core + 'log');
 
 var adapter = config[config.adapter];
-var Reader = require(dirs.gekko + '/plugins/postgres/reader.js');
+
+var Reader = null;
+
+var plugin = config[config.adapter];
+if (plugin.path)
+  Reader = require(dirs.gekko + plugin.path+'/reader.js');
 
 var reader = new Reader();
 
