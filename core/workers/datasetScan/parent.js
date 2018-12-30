@@ -14,8 +14,8 @@ module.exports = function(config, done) {
 
   var adapter = config[config.adapter];
 // UIconfig.adaptor = "string"
-//  var scan = require(dirs.gekko + adapter.path + '/scanner');
-  var scan = require(dirs.gekko + '/plugins/postgres/scanner.js');
+  var scan = require(dirs.gekko + adapter.path + '/scanner');
+//  var scan = require(dirs.gekko + '/plugins/postgres/scanner.js');
 
   scan((err, markets) => {
 

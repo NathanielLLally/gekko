@@ -7,6 +7,7 @@ const util = require(__dirname + '/core/util')
   , PipelineFactory = require(dirs.core + 'pipelineFactory').PipelineFactory
   , BrokerFactory = require(dirs.broker + 'brokerFactory').BrokerFactory
   , Broker = require(dirs.broker + 'brokerFactory').Broker
+  , Checker = require(dirs.broker + 'exchangeChecker')
   , Trader = require(dirs.plugins + 'trader/trader')
   , JSON = require('JSON')
   , async = require('async')
@@ -107,35 +108,28 @@ function initPipes(broker) {
 
 //Object.keys(config.multiwatch).forEach((ex) => { 
 
-(async function main() {
-  const result = await Promise.all(_.map(
+  const result = _.map(
     Object.keys(config.multitrader),
-    async (ex) => {
+    (ex) => {
       var broker = null;
-
-      if (ex != 'gdax')
-        return;
 
       let conf = {
         ...config.multitrader[ex],
         exchange: ex,
-        private: false
       };
-      try {
-        broker = await BrokerFactory.create(conf);
-      } catch(e) {
-        util.die(e,false);
-      };
-      log.info('assets:' + JSON.stringify(broker.capabilities.assets));
-      log.info('currencies: '+JSON.stringify(broker.capabilities.currencies));
+      
+      log.info('exchange: '+ex);
+      let cap = Checker.getExchangeCapabilities(ex);
+      log.info('assets:' + JSON.stringify(cap.assets));
+      log.info('currencies: '+JSON.stringify(cap.currencies));
+      /*
       try {
         const na = initPipes( broker );
       } catch(e) {
         util.die(e, true);
       }
       log.debug('created pipelines');
+      */
     }
   )
-  );
 
-})();

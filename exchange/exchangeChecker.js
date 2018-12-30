@@ -9,7 +9,7 @@ const Checker = function() {
 
 Checker.prototype.getExchangeCapabilities = function(slug) {
   if(!fs.existsSync(__dirname + '/wrappers/' + slug + '.js'))
-    throw new errors.ExchangeError(`Gekko does not know the exchange "${slug}"`);
+    throw new errors.ExchangeError('Gekko does not know the exchange '+slug);
 
   return require('./wrappers/' + slug).getCapabilities();
 }

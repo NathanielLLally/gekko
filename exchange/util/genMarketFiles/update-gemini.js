@@ -52,15 +52,13 @@ let mockRequest = results => {
     let marketKeys = [];
     _.map(assets, a => {
       _.map(currencies, c => {
-        console.log(a+c);
+//        console.log(a+c);
         if (_.indexOf(books, a+c) > -1)
           marketKeys.push({asset: a, currency: c})
       })
     });
-  console.log(JSON.stringify(marketKeys));
 
    let markets = _.map(marketKeys, market => {
-     console.log(market);
     return {
       pair: [
        market.currency,
