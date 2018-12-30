@@ -1,27 +1,47 @@
 const _ = require('lodash')
- , util = require('../../core/util.js')
- , config = util.getConfig()
- , log = require(util.dirs().core + 'log')
- , handle = require('./handle')
- , PGAdapter = require('./util')
- , { Query } = require('pg')
+  , fs = require('fs')
+  , util = require('../../core/util.js')
+  , dirs = util.dirs()
+  , config = util.getConfig()
+  , adapter = config[config.adapter]
+  , log = require(dirs.core + 'log')
+  , pg = require('pg')
+  , pluginHelper = require(dirs.core + 'pluginUtil')
+  , Pipeline = require(dirs.core + 'pipelineFactory').Pipeline
+  , PGAdapter = require(dirs.gekko + adapter.path + '/PGAdapter').PGAdapter
+  , { Query } = require('pg')
 ;
 
-var Reader = function() {
-  _.bindAll(this);
-  this.db = handle;
-}
+class PGAreader extends PGAdapter {
+  static getInstance() {
+    if (_singleton == null)
+      try {
+        _singleton = PGAdapter.create();
+      } catch(e) {
+        util.die(e);
+      };
 
-// returns the furthest point (up to `from`) in time we have valid data from
-Reader.prototype.mostRecentWindow = function(from, to, next) {
-  to = to.unix();
-  from = from.unix();
+    return _singleton;
+  };
 
-  var maxAmount = to - from + 1;
-  
-  this.db.connect((err,client,done) => {
-    var query = client.query(new Query(`
-    SELECT start from ${postgresUtil.table('candles')}
+  constructor (settings) {
+    super(settings);
+  };
+  done() {
+    if (typeof this.candleWriterEventCallback === 'function')
+      this.candleWriterEventCallback();
+  }
+
+  // returns the furthest point (up to `from`) in time we have valid data from
+  mostRecentWindow(from, to, next) {
+    to = to.unix();
+    from = from.unix();
+
+    var maxAmount = to - from + 1;
+
+    this.handlePool.connect((err,client,done) => {
+      var query = client.query(new Query(`
+    SELECT start from ${this.table}
     WHERE start <= ${to} AND start >= ${from}
     ORDER BY start DESC
     `), function (err, result) {
@@ -35,63 +55,63 @@ Reader.prototype.mostRecentWindow = function(from, to, next) {
       }
     });
 
-    var rows = [];
-    query.on('row', function(row) {
-      rows.push(row);
-    });
-
-    // After all data is returned, close connection and return results
-    query.on('end', function() {
-      done();
-      // no candles are available
-      if(rows.length === 0) {
-        return next(false);
-      }
-
-      if(rows.length === maxAmount) {
-
-        // full history is available!
-
-        return next({
-          from: from,
-          to: to
-        });
-      }
-
-      // we have at least one gap, figure out where
-      var mostRecent = _.first(rows).start;
-
-      var gapIndex = _.findIndex(rows, function(r, i) {
-        return r.start !== mostRecent - i * 60;
+      var rows = [];
+      query.on('row', function(row) {
+        rows.push(row);
       });
 
-      // if there was no gap in the records, but
-      // there were not enough records.
-      if(gapIndex === -1) {
-        var leastRecent = _.last(rows).start;
+      // After all data is returned, close connection and return results
+      query.on('end', function() {
+        done();
+        // no candles are available
+        if(rows.length === 0) {
+          return next(false);
+        }
+
+        if(rows.length === maxAmount) {
+
+          // full history is available!
+
+          return next({
+            from: from,
+            to: to
+          });
+        }
+
+        // we have at least one gap, figure out where
+        var mostRecent = _.first(rows).start;
+
+        var gapIndex = _.findIndex(rows, function(r, i) {
+          return r.start !== mostRecent - i * 60;
+        });
+
+        // if there was no gap in the records, but
+        // there were not enough records.
+        if(gapIndex === -1) {
+          var leastRecent = _.last(rows).start;
+          return next({
+            from: leastRecent,
+            to: mostRecent
+          });
+        }
+
+        // else return mostRecent and the
+        // the minute before the gap
         return next({
-          from: leastRecent,
+          from: rows[ gapIndex - 1 ].start,
           to: mostRecent
         });
-      }
-
-      // else return mostRecent and the
-      // the minute before the gap
-      return next({
-        from: rows[ gapIndex - 1 ].start,
-        to: mostRecent
       });
-    });
-  });  
-}
+    });  
+  }
 
-Reader.prototype.tableExists = function (name, next) {
-  this.db.connect((err,client,done) => {
-    client.query(`
+  tableExists(name, next) {
+    this.handlePool.connect((err,client,done) => {
+      client.query(`
       SELECT table_name
       FROM information_schema.tables
-      WHERE table_schema='${postgresUtil.schema()}'
-        AND table_name='${postgresUtil.table(name)}';
+      WHERE table_schema='${this.schema}'
+        AND table_name='${name}';
     `, function(err, result) {
       done();
       if (err) {
@@ -100,98 +120,113 @@ Reader.prototype.tableExists = function (name, next) {
 
       next(null, result.rows.length === 1);
     });
-  });  
-}
-
-Reader.prototype.get = function(from, to, what, next) {
-  if(what === 'full'){
-    what = '*';
+    });  
   }
-  
-  this.db.connect((err,client,done) => {
-    var query = client.query(new Query(`
-    SELECT ${what} from ${postgresUtil.table('candles')}
+
+  get(from, to, what, next) {
+    if(what === 'full'){
+      what = '*';
+    }
+
+    this.handlePool.connect((err,client,done) => {
+      var query = client.query(new Query(`
+    SELECT ${what} from ${this.table}
     WHERE start <= ${to} AND start >= ${from}
     ORDER BY start ASC
     `));
 
-    var rows = [];
-    query.on('row', function(row) {
-      rows.push(row);
-    });
+      var rows = [];
+      query.on('row', function(row) {
+        rows.push(row);
+      });
 
-    query.on('end',function(){
-      done();
-      next(null, rows);
-    });
-  });  
-}
+      query.on('end',function(){
+        done();
+        next(null, rows);
+      });
+    });  
+  }
 
-Reader.prototype.count = function(from, to, next) {
-  this.db.connect((err,client,done) => {
-    var query = client.query(new Query(`
-    SELECT COUNT(*) as count from ${postgresUtil.table('candles')}
+  count(from, to, next) {
+    this.handlePool.connect((err,client,done) => {
+      var query = client.query(new Query(`
+    SELECT COUNT(*) as count from ${this.table}
     WHERE start <= ${to} AND start >= ${from}
     `));
-    var rows = [];
-    query.on('row', function(row) {
-      rows.push(row);
-    });
+      var rows = [];
+      query.on('row', function(row) {
+        rows.push(row);
+      });
 
-    query.on('end',function(){
-      done();
-      next(null, _.first(rows).count);
-    });
-  });  
-}
+      query.on('end',function(){
+        done();
+        next(null, _.first(rows).count);
+      });
+    });  
+  }
 
-Reader.prototype.countTotal = function(next) {
-  this.db.connect((err,client,done) => {
-    var query = client.query(new Query(`
-    SELECT COUNT(*) as count from ${postgresUtil.table('candles')}
+  countTotal(next) {
+    this.handlePool.connect((err,client,done) => {
+      var query = client.query(new Query(`
+    SELECT COUNT(*) as count from ${this.table}
     `));
-    var rows = [];
-    query.on('row', function(row) {
-      rows.push(row);
-    });
+      var rows = [];
+      query.on('row', function(row) {
+        rows.push(row);
+      });
 
-    query.on('end',function(){
-      done();
-      next(null, _.first(rows).count);
-    });
-  });  
-}
+      query.on('end',function(){
+        done();
+        next(null, _.first(rows).count);
+      });
+    });  
+  }
 
-Reader.prototype.getBoundry = function(next) {
-  this.db.connect((err,client,done) => {
-    var query = client.query(new Query(`
+  getBoundry(next) {
+    this.handlePool.connect((err,client,done) => {
+      var query = client.query(new Query(`
     SELECT (
       SELECT start
-      FROM ${postgresUtil.table('candles')}
+      FROM ${this.table}
       ORDER BY start LIMIT 1
     ) as first,
     (
       SELECT start
-      FROM ${postgresUtil.table('candles')}
+      FROM ${this.table}
       ORDER BY start DESC
       LIMIT 1
     ) as last
     `));
-    var rows = [];
-    query.on('row', function(row) {
-      rows.push(row);
-    });
+      var rows = [];
+      query.on('row', function(row) {
+        rows.push(row);
+      });
 
-    query.on('end',function(){
-      done();
-      next(null, _.first(rows));
-    });
-  });  
+      query.on('end',function(){
+        done();
+        next(null, _.first(rows));
+      });
+    });  
+  }
+
+  close() {
+    //obsolete due to connection pooling
+    //this.handlePool.end();
+  }
+
 }
 
-Reader.prototype.close = function() {
-  //obsolete due to connection pooling
-  //this.db.end();
-}
-
-module.exports = Reader;
+var generator = function(done, pluginMeta, pipe_config) {
+  if (pipe_config == null)
+    pipe_config = config;
+//console.log('PGAdapter.generator',done, pluginMeta, pipe_config[config.adapter]);
+//    await PGAdapter.createInit(config);
+  let adapter = null;
+  try {
+    adapter = PGAreader.createInit(done, pipe_config[config.adapter]);
+  } catch(e) {
+    util.die(e);
+  };
+  return adapter; 
+};
+module.exports = generator;

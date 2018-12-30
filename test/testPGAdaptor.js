@@ -8,6 +8,9 @@ var moment = require('moment');
 var util = require(__dirname + '/../core/util');
 var config = util.getConfig();
 var dirs = util.dirs();
+var JSON = require('JSON');
+
+//TODO, make actual test cases out of these test cases for automation
 
 /*
 config.adapter = 'PGAdaptor';
@@ -34,7 +37,7 @@ var pluginParameters = require(dirs.gekko + 'plugins');
 var pluginHelper = require(dirs.core + 'pluginUtil');
 const pluginMock = {
   slug: 'PostgreSQL Adaptor',
-  dependencies: config.PGAdaptor.dependencies
+  dependencies: config.PGAdapter.dependencies
 }
 
 const cannotLoad = pluginHelper.cannotLoad(pluginMock);
@@ -43,11 +46,28 @@ if(cannotLoad) {
 }
 
 let mc = config;
-        mc.PGAdaptor.asset = 'BTC';
-        mc.PGAdaptor.currency = 'USD';
-        mc.PGAdaptor.exchange = 'gdax';
+        mc.PGAdapter.asset = 'BTC';
+        mc.PGAdapter.currency = 'USD';
+        mc.PGAdapter.exchange = 'gdax';
 
-
+//test plugin load, dB check upon load
 var pluginMeta =  _.find(pluginParameters, (o) => {return o.slug == 'candleWriter'})
 //var pluginMeta = config.PGAdaptor;
 pluginHelper.load(pluginMeta, (e) => {console.log('pluginLoader done(), next() thingy')});
+
+//test scanner
+var adapter = config[config.adapter];
+var scan = require(dirs.gekko + adapter.path + '/scanner');
+
+scan((err, markets) => {
+  if (err)
+    console.log("scanner err:"+err);
+  console.log(JSON.stringify(markets));
+  assert.typeOf(markets, 'array');
+
+});
+
+
+//reader
+
+

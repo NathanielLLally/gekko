@@ -5,9 +5,9 @@ var pg = require('pg');
 const util = require('../../core/util.js');
 const config = util.getConfig();
 const dirs = util.dirs();
-var postgresUtil = require('./util');
 
-var connectionString = config.postgresql.connectionString;
+var PGAc = config.PGAdapter;
+var connectionString = config.PGAdapter.connectionString;
 
 
 module.exports = done => {
@@ -22,10 +22,7 @@ module.exports = done => {
 
     var sql = "select datname from pg_database";
 
-    // In single DB setup we don't need to go look into other DBs
-    if (postgresUtil.useSingleDatabase()) {
-      sql = "select datname from pg_database where datname='" + postgresUtil.database() + "'";
-    }
+    sql = "select datname from pg_database where datname='" + PGAc.database + "'";
 
     var query = scanClient.query(sql, function (err, result) {
 
@@ -42,7 +39,7 @@ module.exports = done => {
           var query = scanTablesClient.query(`
             SELECT table_name
             FROM information_schema.tables
-            WHERE table_schema='${postgresUtil.schema()}';
+            WHERE table_schema='${PGAc.schema}';
           `, function(err, result) {
             if (err) {
               return util.die('DB error at `scanning tables`');
@@ -61,10 +58,8 @@ module.exports = done => {
                * - in single database setup: poloniex_candles_usdt_btc
                * - in multi db setup: db = poloniex, table = candles_usdt_btc
                */
-              if (postgresUtil.useSingleDatabase()) {
                 exchangeName = first;
                 first = parts.shift();
-              }
 
               if(first === 'candles')
                 markets.push({
