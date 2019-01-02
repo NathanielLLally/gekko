@@ -55,6 +55,7 @@ class Broker {
         _.last(p.pair) === config.asset.toUpperCase();
     });
 
+
     if(config.private) {
       if(this.cantTrade()) {
         throw new Error(this.cantTrade());

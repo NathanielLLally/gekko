@@ -168,7 +168,7 @@ Trader.getCapabilities = function() {
     currencies: marketData.currencies,
     assets: marketData.assets,
     markets: marketData.markets,
-    requires: ['key', 'secret', 'passphrase'],
+    requires: ['key', 'secret'],
     providesHistory: 'date',
     providesFullHistory: false,
     tid: 'tid',

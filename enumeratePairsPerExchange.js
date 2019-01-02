@@ -8,6 +8,7 @@ const util = require(__dirname + '/core/util')
   , BrokerFactory = require(dirs.broker + 'brokerFactory').BrokerFactory
   , Broker = require(dirs.broker + 'brokerFactory').Broker
   , Trader = require(dirs.plugins + 'trader/trader')
+  , Checker = require(dirs.broker + 'exchangeChecker')
   , JSON = require('JSON')
   , async = require('async')
 
@@ -93,14 +94,13 @@ function initPipes(broker) {
             asset: asset,
           };
           */
-//        console.log('PipelineFactory.createInit ',mc);
         var pipe = PipelineFactory.createInit({ config: mc, mode: mode });
         pipes.push(pipe);
       }
     );
     broker.capabilities.markets = _.compact(result);
   } catch (e) {
-    e.trace = 'initPipes';
+    console.log(e.fullStack)
     util.die(e, false);
   };
 }
@@ -113,25 +113,27 @@ function initPipes(broker) {
     async (ex) => {
       var broker = null;
 
-      if (ex != 'gdax')
-        return;
-
       let conf = {
         ...config.multitrader[ex],
         exchange: ex,
-        private: false
+        private: true
       };
+      //broker still needs to be initialized with a pair
+      let cap = Checker.getExchangeCapabilities(ex);
+      conf.currency = _.first(_.first(cap.markets).pair).toUpperCase() 
+      conf.asset = _.last(_.first(cap.markets).pair).toUpperCase() 
       try {
         broker = await BrokerFactory.create(conf);
       } catch(e) {
         util.die(e,false);
       };
-      log.info('assets:' + JSON.stringify(broker.capabilities.assets));
-      log.info('currencies: '+JSON.stringify(broker.capabilities.currencies));
+      log.info("Initializing gekko broker for "+ex);
+//      log.info('assets:' + JSON.stringify(broker.capabilities.assets));
+//      log.info('currencies: '+JSON.stringify(broker.capabilities.currencies));
       try {
         const na = initPipes( broker );
       } catch(e) {
-        util.die(e, true);
+        util.die(e, false);
       }
       log.debug('created pipelines');
     }

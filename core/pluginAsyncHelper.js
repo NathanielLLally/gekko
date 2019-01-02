@@ -80,68 +80,55 @@ var inherits = require('util').inherits;
     //    plugin config object
     // @param Function next
     //    callback
-    load: function(plugin, next, pipe_config) {
+    load: async function(plugin, pipe_config, gekkoMode) {
+      return new Promise((resolve, reject) => {
 
-//      console.log('ph.load');
-//      console.log([].slice.apply(arguments))
+        plugin.config = pipe_config[plugin.slug];
 
-      plugin.config = config[plugin.slug];
+        if(!plugin.config || !plugin.config.enabled) {
+          reject("pluginHelper.load: missing config or not enabled for "+plugin.slug);
+          return;
+        }
 
-      if(!plugin.config || !plugin.config.enabled)
-        return next();
+        if(plugin.modes.indexOf(gekkoMode) == -1) {
+          log.warn(
+            'The plugin',
+            plugin.name,
+            'does not support the mode',
+            gekkoMode + '.',
+            'It has been disabled.'
+          )
+          reject("pluginHelper.load "+plugin.slug);
+          return;
+        }
 
-      if(!Object.prototype.hasOwnProperty(plugin.modes, gekkoMode)) {
-//      if(!_.contains(plugin.modes, gekkoMode)) {
-        log.warn(
-          'The plugin',
-          plugin.name,
-          'does not support the mode',
-          gekkoMode + '.',
-          'It has been disabled.'
-        )
-        return next();
-      }
+        log.info('Setting up:');
+        log.info('\t', plugin.name);
+        log.info('\t', plugin.description);
 
-      log.info('Setting up:');
-      log.info('\t', plugin.name);
-      log.info('\t', plugin.description);
+        var cannotLoad = pluginHelper.cannotLoad(plugin);
+        if(cannotLoad) {
+          reject("pluginHelper.load cannotLoad"+plugin.slug);
+          return;
+        }
 
-      var cannotLoad = pluginHelper.cannotLoad(plugin);
-      if(cannotLoad)
-        return next(cannotLoad);
+        if(plugin.path)
+          var Constructor = require(pluginDir + plugin.path(pipe_config));
+        else
+          var Constructor = require(pluginDir + plugin.slug);
 
-      if(plugin.path)
-        var Constructor = require(pluginDir + plugin.path(config));
-      else
-        var Constructor = require(pluginDir + plugin.slug);
-
-      if(plugin.async) {
-        try {
-          inherits(Constructor, Emitter);
-        } catch {
-          //TODO handle the event where class is exported as {}
-
-
-        };
-        var instance = new Constructor(util.defer(function(err) {
-          next(err, instance, pipe_config);
-        }), plugin, pipe_config);
-        Emitter.call(instance);
-
-        instance.meta = plugin;
-      } else {
+        let instance = null;
         inherits(Constructor, Emitter);
-        var instance = new Constructor(plugin, pipe_config);
+        instance = new Constructor(plugin);
         Emitter.call(instance);
 
         instance.meta = plugin;
-        _.defer(function() {
-          next(null, instance); 
-        });
-      }
 
-      if(!plugin.silent)
-        log.info('\n');
+        if(!plugin.silent)
+          log.info('\n');
+        resolve(instance);
+        return;
+      })
     }
   }
 

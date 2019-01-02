@@ -80,68 +80,64 @@ var inherits = require('util').inherits;
     //    plugin config object
     // @param Function next
     //    callback
-    load: async function(plugin, config) {
-
-      plugin.config = config[plugin.slug];
-
-      if(!plugin.config || !plugin.config.enabled)
-        return Promise.reject("pluginHelper.load: missing config or not enabled for "+plugin.slug);
-
-      if(!_.contains(plugin.modes, gekkoMode)) {
-        log.warn(
-          'The plugin',
-          plugin.name,
-          'does not support the mode',
-          gekkoMode + '.',
-          'It has been disabled.'
-        )
-        return Promise.reject("pluginHelper.load "+plugin.slug);
-      }
-
-      log.info('Setting up:');
-      log.info('\t', plugin.name);
-      log.info('\t', plugin.description);
-
-      var cannotLoad = pluginHelper.cannotLoad(plugin);
-      if(cannotLoad)
-        return Promise.reject("pluginHelper.load cannotLoad"+plugin.slug);
-
-      if(plugin.path)
-        var Constructor = require(pluginDir + plugin.path(config));
-      else
-        var Constructor = require(pluginDir + plugin.slug);
-
-      let instance = null;
-      if(plugin.async) {
-        try {
-          inherits(Constructor, Emitter);
-        } catch {
-          //TODO handle the event where class is exported as {}
+    load: async function(plugin, pipe_config, gekkoMode) {
+      return new Promise((resolve, reject) => {
 
 
-        };
-        try {
-          instance = new Constructor(await Promise.resolve(plugin));
-        } catch (rejectedValue) {
-          log.error("pipelineFactory.createInit borked, ",rejectedValue);
-          return util.die(rejectedValue, true);
+        plugin.config = pipe_config[plugin.slug];
+
+        if(!plugin.config || !plugin.config.enabled)
+          reject("pluginHelper.load: missing config or not enabled for "+plugin.slug);
+
+        if(plugin.modes.indexOf(gekkoMode) == -1) {
+          log.warn(
+            'The plugin',
+            plugin.name,
+            'does not support the mode',
+            gekkoMode + '.',
+            'It has been disabled.'
+          )
+          reject("pluginHelper.load "+plugin.slug);
         }
-        Emitter.call(instance);
 
-        instance.meta = plugin;
-      } else {
-        inherits(Constructor, Emitter);
-        instance = new Constructor(plugin);
-        Emitter.call(instance);
+        log.info('Setting up:');
+        log.info('\t', plugin.name);
+        log.info('\t', plugin.description);
 
-        instance.meta = plugin;
-        _.defer(function() {
-        });
-      }
+        var cannotLoad = pluginHelper.cannotLoad(plugin);
+        if(cannotLoad)
+          reject("pluginHelper.load cannotLoad"+plugin.slug);
 
-      if(!plugin.silent)
-        log.info('\n');
-      Promise.resolve(instance);
+        if(plugin.path)
+          var Constructor = require(pluginDir + plugin.path(pipe_config));
+        else
+          var Constructor = require(pluginDir + plugin.slug);
+
+        let instance = null;
+        if(plugin.async) {
+          try {
+            inherits(Constructor, Emitter);
+          } catch {
+            //TODO handle the event where class is exported as {}
+
+
+          };
+          instance = await new Constructor(plugin);
+          Emitter.call(instance);
+
+          instance.meta = plugin;
+        } else {
+          inherits(Constructor, Emitter);
+          instance = new Constructor(plugin);
+          Emitter.call(instance);
+
+          instance.meta = plugin;
+        }
+
+        if(!plugin.silent)
+          log.info('\n');
+        resolve(instance);
+      })
     }
   }
 

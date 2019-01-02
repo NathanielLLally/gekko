@@ -1,23 +1,16 @@
 var _ = require('lodash');
 const log = require('../../core/log');
 const util = require('../../core/util');
-var config = util.getConfig();
+const config = util.getConfig();
 
 var handle = require('./handle');
-var postgresUtil = null;
+var postgresUtil = require('./util');
 
 var Store = function(done, pluginMeta) {
   _.bindAll(this);
-  this.self = pluginMeta.self;
-  this.key = this.self.key;
-  config = util.getConfig(this.key);
   this.done = done;
   this.db = handle;
   this.cache = [];
-
-  postgresUtil = require('./util');
-  console.log("new postgres writer with key ",this.key)
-  postgresUtil.key = this.key;
   done();
 }
 

@@ -19,6 +19,7 @@ var _ = require('lodash');
 var log = require(dirs.core + 'log');
 const async = require('async')
   , JSON = require('JSON')
+//  , Promise = require('bluebird')
 ;
 
 class Pipeline {
@@ -39,6 +40,7 @@ class Pipeline {
     this.GekkoStream = null;
     // utility to check and load plugins.
     this.pluginHelper = null;
+    this.pluginHelperPromise = null;
     // meta information about every plugin that tells Gekko
     // something about every available plugin
     this.pluginParameters = null;
@@ -51,6 +53,7 @@ class Pipeline {
   init() {
     this.GekkoStream = require(dirs.core + 'gekkoStream');
     this.pluginHelper = require(dirs.core + 'pluginUtil');
+    this.pluginHelperPromise = require(dirs.core + 'pluginAsyncHelper');
     this.pluginParameters = require(dirs.gekko + 'plugins');
     this.subscriptions = require(dirs.gekko + 'subscriptions');
 
@@ -62,44 +65,75 @@ class Pipeline {
 
 class PipelineFactory {
 
-  /*
- let result = await Promise.all(_.map(responseJson, addEnabledProperty)); 
-   */
+ //let result = await Promise.all(_.map(responseJson, addEnabledProperty)); 
   // Instantiate each enabled plugin
+  // 
+  /*
   static loadPlugins(self) {
-    /*
-    // load all plugins
-    try {
-      let result = await Promise.all(_.map(
-        self.pluginParameters,
-        self.pluginHelper.load
-      ));
-    } catch (e) {
-      throw(e);
-    }
-    self.plugins = _.compact(_plugins);
-    */
-//    _.map(self.pluginParameters, (o) => {
-//      console.log(o);
-      //o.config = Object.assign(o.config, self.config)
-//    });
-
-//    console.log(self.pluginParameters);
-
-    async.mapSeries(
-      self.pluginParameters,
-      function (params, cb) {
-//        console.log('factoryMapSeries',self.config);
-        return self.pluginHelper.load(params, cb, self.config)
-      },
-      function(error, _plugins) {
-        if(error)
-          return util.die(error, true);
-
-        self.plugins = _.compact(_plugins);
+    let plugins = [];
+    var current = Promise.resolve();
+    Promise.map(Object.keys(self.pluginParameters), (param) => {
+      let p = self.pluginParameters[param];
+      let pc = self.config[p.slug];
+      if (pc && pc.enabled) {
+        current = current.then( () => {
+          return self.pluginHelper.load( p , self.config, self.mode);
+        });
+        return current;
       }
-    );
+    }).map( (plugin) => {
+      console.log("plugin",plugin);
+      plugins.push(plugin);
+      return plugin;
+    }).then((plugin) => {
+      console.log("plugin",plugin);
+      return plugin;
+    }).catch(e => log.error(e));
+    return plugins;
   }
+  */
+  static loadPlugins(self) {
+    var promises = Object.keys(self.pluginParameters).map((param) => {
+      let p = self.pluginParameters[param];
+      let pc = self.config[p.slug];
+      if (pc && pc.enabled) {
+
+        const plugin = self.pluginHelperPromise.load( p , self.config, self.mode ).then(
+           (res) => {
+             return res;
+           }).catch((e) => {
+             let trace = new Error(e);
+             log.error(e, e.fullStack)
+           });
+        return plugin;
+
+      }
+    });
+    return promises;
+  }
+
+  /*
+  static loadPlugins(self) {
+//     return new Promise((resolve, reject) => {
+    let p = Object.keys(self.pluginParameters).filter( async (param) => {
+        let r = null;
+        try {
+          //this is returning a promise from async
+          r = await self.pluginHelper.load(
+            self.pluginParameters[param] , self.config, self.mode
+          )
+        } catch(e) {
+
+        };
+      if (r != null) {
+        console.log(r);
+        return r;
+      }
+      })
+    console.log(p);
+    return p;
+  }
+  */
 
   // Some plugins emit their own events, store
   // a reference to those plugins.
@@ -272,7 +306,7 @@ class PipelineFactory {
     return self;
   }
 
-  static createInit(settings) {
+  static async createInit(settings) {
 //    console.log('funkyAsync',settings);
     let self = PipelineFactory.create(settings);
 //    console.log('postFunky',self.config);
@@ -287,7 +321,12 @@ class PipelineFactory {
     }
     */
 
-    PipelineFactory.loadPlugins(self);
+//    const p = await Promise.all(PipelineFactory.loadPlugins(self));
+//    self.plugins = 
+//    const p =  await Promise.all(PipelineFactory.loadPlugins(self));
+//    console.log(JSON.stringify(p));
+    self.plugins =  PipelineFactory.loadPlugins(self);
+//    console.log("plugins: ", self.plugins);
     PipelineFactory.referenceEmitters(self);
     PipelineFactory.subscribePlugins(self);
     PipelineFactory.prepareMarket(self);

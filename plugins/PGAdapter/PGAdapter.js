@@ -19,19 +19,15 @@ if(cannotLoad) {
   util.die(cannotLoad);
 }
 
-var _singleton = null;
-var _handlePool = null;
-var _handlePoolPostgres = null;
+var _pgPoolHandles = {};
 class PGAdapter {
-  static getInstance() {
-    if (_singleton == null)
-      try {
-        _singleton = PGAdapter.create();
-      } catch(e) {
-        util.die(e);
-      };
-
-    return _singleton;
+  static getHandleInstance(connStr) {
+    if (_pgPoolHandles[connStr] == null) {
+      log.debug("new pg.Pool handle "+connStr);
+      _pgPoolHandles[connStr] = new pg.Pool({ connectionString: connStr }); 
+    }
+      
+    return _pgPoolHandles[connStr];
   };
 
   //  factory pattern utility function
@@ -108,12 +104,12 @@ class PGAdapter {
 
     this.table = this.tableMoniker();
 
-    this.handlePool = new pg.Pool({
-      connectionString: this.connectionString + '/' + this.config.PGAdapter.database
-    });
-    this.handlePoolPostgres = new pg.Pool({
-      connectionString: this.connectionString + '/postgres',
-    });
+    this.handlePool = PGAdapter.getHandleInstance(
+      this.connectionString + '/' + this.config.PGAdapter.database
+    );
+    this.handlePoolPostgres = PGAdapter.getHandleInstance( 
+      this.connectionString + '/postgres',
+    );
     this.checkExists(this.table);
     this.done();
   };

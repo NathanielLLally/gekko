@@ -1,19 +1,11 @@
-var key = null;
-var settings = null;
-var watch = null;
-var config = null;
+var config = require('../../core/util.js').getConfig();
 
-function init() {
-  config = require('../../core/util.js').getConfig(key);
-
-  watch = config.watch;
-  if(watch) {
-    settings = {
-      exchange: watch.exchange,
-      pair: [watch.currency, watch.asset]
-    }
+var watch = config.watch;
+if(watch) {
+  var settings = {
+    exchange: watch.exchange,
+    pair: [watch.currency, watch.asset]
   }
-  console.log("postgresUtil getConfig key [",key,"]", watch); 
 }
 
 /**
@@ -37,7 +29,6 @@ function useLowerCaseTableNames() {
 }
 
 module.exports = {
-  key: key,
   settings: settings,
 
   // true if we have single db setup (see postrgesql.database config key)
@@ -45,7 +36,6 @@ module.exports = {
 
   // returns DB name (depends on single db setup)
   database: function () {
-    init();
     return useSingleDatabase() ?
       config.postgresql.database :
       config.watch.exchange.toLowerCase().replace(/\-/g,'');
@@ -54,7 +44,6 @@ module.exports = {
   // returns table name which can be different if we use
   // single or multiple db setup.
   table: function (name) {
-    init();
     if (useSingleDatabase()) {
       name = watch.exchange.replace(/\-/g,'') + '_' + name;
     }
@@ -72,7 +61,6 @@ module.exports = {
 
   // postgres schema name. defaults to 'public'
   schema: function () {
-    init();
     return config.postgresql.schema ? config.postgresql.schema : 'public';
   }
 }

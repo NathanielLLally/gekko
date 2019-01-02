@@ -48,7 +48,7 @@ checkClient.connect((err, client, done) => {
     util.die(err);
   }
 
-  log.debug("Check database exists: " + dbName + " tables "+postgresUtil.table('candles'));
+  log.debug("Check database exists: " + dbName);
   client.query("select count(*) from pg_catalog.pg_database where datname = $1", [dbName],
     (err, res) => {
       if(err) {

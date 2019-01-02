@@ -1,4 +1,3 @@
-const Gdax = require('gdax');
 const _ = require('lodash');
 const moment = require('moment');
 
@@ -13,20 +12,18 @@ const marketData = require('./yobit-markets.json');
 const Trader = function(config) {
   this.post_only = true;
   this.use_sandbox = false;
-  this.name = 'Gemini';
+  this.name = 'YoBIT';
   this.scanback = false;
   this.scanbackTid = 0;
   this.scanbackResults = [];
   this.asset = config.asset;
   this.currency = config.currency;
-
-  this.api_url = 'https://api.gemini.com';
-  this.api_sandbox_url = 'https://api-sandbox.gemini.com';
+  this.api_url = 'https://yobit.net/tapi/';
+  this.api_sandbox_url = '';
 
   if (_.isObject(config)) {
     this.key = config.key;
     this.secret = config.secret;
-    this.passphrase = config.passphrase;
 
     this.pair = [config.asset, config.currency].join('-').toUpperCase();
     this.post_only =
@@ -163,12 +160,12 @@ Trader.prototype.getMaxDecimalsNumber = function(number, decimalLimit = 8) {
 
 Trader.getCapabilities = function() {
   return {
-    name: 'GEMINI',
-    slug: 'gemini',
+    name: 'YOBIT',
+    slug: 'yobit',
     currencies: marketData.currencies,
     assets: marketData.assets,
     markets: marketData.markets,
-    requires: ['key', 'secret', 'passphrase'],
+    requires: ['key', 'secret'],
     providesHistory: 'date',
     providesFullHistory: false,
     tid: 'tid',

@@ -11,8 +11,17 @@ const util = require(__dirname + '/core/util')
   , Trader = require(dirs.plugins + 'trader/trader')
   , JSON = require('JSON')
   , async = require('async')
+  , ccxt = require('ccxt')
+  , ansicolor = require ('ansicolor').nice
+  , asTable = require ('as-table').configure ({ delimiter: ' | ' })
+  , Promise = require('bluebird')
 
 require('./exchange/dependencyCheck');
+
+process.on('unhandledRejection', (err) => {
+  console.error("*****-> unhandled Promise Rejection??  :" + err+"\n"+err.stack)
+  process.exit(1)
+})
 
 /*
  *  depends on exchange market-data being current, not entirely dynamic
@@ -39,6 +48,46 @@ async function asyncForEach(array, callback) {
   for (let index = 0; index < array.length; index++) {
     await callback(array[index], index, array)
   }
+}
+// instantiates global exchange[]
+//
+async function initExchanges (list, creds) {
+	const promises = list.map( async (exName) => {
+		let exchangeFound = ccxt.exchanges.indexOf (exName) > -1
+		if (exchangeFound) {
+
+			log ('Instantiating', exName.green, 'exchange')
+			// instantiate the exchange by id
+
+  //let exchange = new ccxt.gdax (exch)
+			let e =  new ccxt[exName] ({
+				verbose,
+				// 'proxy': 'https://cors-anywhere.herokuapp.com/',
+				// 'proxy': 'https://crossorigin.me/',
+			})
+      if (creds.hasOwnProperty(exName)) {
+        var keys = Object.keys(creds[exName])
+        keys.map( self => { e[self] = creds[exName][self] } )
+      }
+      e['name'] = exName
+      return e
+
+		} else {
+			log ('Exchange ' + exName.red + ' not found')
+			printSupportedExchanges()
+		}
+	})
+	const e = await Promise.all(promises)
+
+	return e;
+}
+
+async function initMarkets (exchanges) 
+{
+//	Object.keys(exchanges).forEach( (k) => console.log(k))
+	const promises = exchanges.map( (e) => e.loadMarkets () )
+	const markets = await Promise.all(promises)
+	return markets
 }
 
 function initPipes(broker) {
@@ -120,8 +169,9 @@ function initPipes(broker) {
       
       log.info('exchange: '+ex);
       let cap = Checker.getExchangeCapabilities(ex);
-      log.info('assets:' + JSON.stringify(cap.assets));
-      log.info('currencies: '+JSON.stringify(cap.currencies));
+//      log.info('assets:' + JSON.stringify(cap.assets));
+//      log.info('currencies: '+JSON.stringify(cap.currencies));
+
       /*
       try {
         const na = initPipes( broker );
