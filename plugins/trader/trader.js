@@ -6,7 +6,7 @@ const emitter = require('../../core/emitterClass.js');
 
 const log = require(dirs.core + 'log');
 //const Broker = require(dirs.broker + 'gekkoBroker');
-const BrokerFactory = require(dirs.broker + 'brokerFactory');
+const BrokerFactory = require(dirs.broker + 'brokerFactory').BrokerFactory;
 
 
 require(dirs.gekko + '/exchange/dependencyCheck');
@@ -14,17 +14,23 @@ require(dirs.gekko + '/exchange/dependencyCheck');
 
 var _instances;
 class Trader extends emitter.GekkoEventEmitter {
-
-  static create(PpostSyncCB, exchangeName, Pconfig) {
-    return function() {
-      const args = [].slice.apply(arguments);
-      let t = new Trader((PpostSyncCB) => {}, exchangeName, Pconfig);
-      t.init();
-      return t;
-    };
+  static create() {
+    const args = [].slice.apply(arguments);
+    let self = new Trader(args);
+    return self;
+  }
+  static async createInitAsync() {
+    const args = [].slice.apply(arguments);
+    var self = Trader.create(args);
+    try {
+      await self.initAsync()
+    } catch (e) {
+      log.error("Trader.createInitAsync ",e);
+    }   
+    return self;
   }
 
-  constructor (PpostSyncCB, exchangeName, Pconfig) { 
+  constructor (PpostSyncCB, exchangeName, Pconfig) {
     super();
     _.bindAll(this);
     if (Pconfig != null)
@@ -52,7 +58,10 @@ class Trader extends emitter.GekkoEventEmitter {
 
     this.cancellingOrder = false;
     this.sendInitialPortfolio = false;
-    this.postSyncCB = PpostSyncCB;
+    if (PpostSyncCB instanceof Function)
+      this.postSyncCB = PpostSyncCB;
+    else
+      this.postSyncCB = () => {};
     this.exposed = false;
     this.exchangeName = exchangeName;
     this.currency = this.brokerConfig.currency.toUpperCase(); 
@@ -62,10 +71,10 @@ class Trader extends emitter.GekkoEventEmitter {
     return this.brokerConfig.currency.toUpperCase() + this.brokerConfig.asset.toUpperCase();
   }
 
-  init () {
+  async initAsync () {
     //TODO: see config comment
     try {
-      this.broker = BrokerFactory.create(this.brokerConfig);
+      this.broker = await BrokerFactory.create(this.brokerConfig);
     } catch(e) {
       util.die(e.message);
     }

@@ -28,9 +28,6 @@ var util = {
       return _config;
 
     if(!program.config) {
-      if(fs.existsSync(util.dirs().gekko + "config.js"))
-        program.config = "config.js"
-      else 
         util.die('Please specifiy config file.', true);
     }
 

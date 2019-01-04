@@ -10,7 +10,7 @@ const moment = require('moment');
 //const bindAll = exchangeUtils.bindAll;
 const log = require(dirs.core + 'log');
 const Broker = require(dirs.broker + 'gekkoBroker');
-const Trader = require(dirs.plugins + 'trader/trader').Trader;
+const Trader = require(dirs.plugins + 'trader/trader');
 const JSON = require('JSON');
 
 //const Trader = require(__dirname  + '/exchange/wrappers/gdax');
@@ -40,59 +40,60 @@ const adviceMock = {
 }
 
 
+var trader = null;
 //main
-var trader = new Trader(() => {});
+(async function main() {
+  trader = await Trader.createInitAsync(() => {}, config.watch.exchange, config.trader);
 
-trader.init();
+  var beginEventLoop = false;
+  trader.on('postInit', () => {
+    console.log('\tGekko v' + util.getVersion() + " using exchange " + config.watch.exchange);
+    //	console.log("market config: "+JSON.stringify(trader.broker.marketConfig));
+    //	console.log("capabilities: "+JSON.stringify(trader.broker.capabilities));
 
-var beginEventLoop = false;
-trader.on('postInit', () => {
-		console.log('\tGekko v' + util.getVersion() + " using exchange " + config.watch.exchange);
-//	console.log("market config: "+JSON.stringify(trader.broker.marketConfig));
-//	console.log("capabilities: "+JSON.stringify(trader.broker.capabilities));
-	
-//	console.log(trader.broker.capabilities);
-  trader.processAdvice(adviceMock);
-  beginEventLoop = true;
-});
+    //	console.log(trader.broker.capabilities);
+    //  trader.processAdvice(adviceMock);
+    beginEventLoop = true;
+  });
 
-// TODO: verify the right object has the right listener...
-//   not capturing these events
-//
-//  trader.broker.createOrder(type, side, amount);
-      trader.on('triggerAborted', (ev) => {
-		log.info('triggerAborted: '+JSON.stringify(ev)) });
-          trader.on('triggerCreated', (ev) => {
-		log.info('triggerCreated: '+JSON.stringify(ev)) });
+  // TODO: verify the right object has the right listener...
+  //   not capturing these events
+  //
+  //  trader.broker.createOrder(type, side, amount);
+  trader.on('triggerAborted', (ev) => {
+    log.info('triggerAborted: '+JSON.stringify(ev)) });
+  trader.on('triggerCreated', (ev) => {
+    log.info('triggerCreated: '+JSON.stringify(ev)) });
   trader.on('triggerFired', (ev) => {
-		log.info('triggerFired: '+JSON.stringify(ev)) });
+    log.info('triggerFired: '+JSON.stringify(ev)) });
 
   trader.on('portfolioChange', (ev) => {
-		log.info('portfolioChange: ' +JSON.stringify(ev)) });
+    log.info('portfolioChange: ' +JSON.stringify(ev)) });
   trader.on('portfolioValueChange', (ev) => {
-		log.info('portfolioValueChange: '+ JSON.stringify(ev)) });
+    log.info('portfolioValueChange: '+ JSON.stringify(ev)) });
 
-    trader.on('tradeCancelled', (ev) => {
-		log.info('tradeCancelled: '+JSON.stringify(ev)) });
+  trader.on('tradeCancelled', (ev) => {
+    log.info('tradeCancelled: '+JSON.stringify(ev)) });
 
-        trader.on('tradeCompleted', (ev) => {
-		log.info('tradeCompleted: '+JSON.stringify(ev)) });
+  trader.on('tradeCompleted', (ev) => {
+    log.info('tradeCompleted: '+JSON.stringify(ev)) });
 
   trader.on('tradeInitiated', (ev) => {
-		log.info('tradeInitiated: '+JSON.stringify(ev)) });
+    log.info('tradeInitiated: '+JSON.stringify(ev)) });
 
-    trader.on('tradeErrored', (ev) => {
-		log.info('tradeErrored:' +JSON.stringify(ev)) });
+  trader.on('tradeErrored', (ev) => {
+    log.info('tradeErrored:' +JSON.stringify(ev)) });
 
 
 
-trader.on('tradeAborted', (data) => {
+  trader.on('tradeAborted', (data) => {
     log.info("trade aborted: "+ data.id + " reason: "+data.reason);
-    });
+  });
 
-(function wait () {
-  if (beginEventLoop)
-    trader.broadcastDeferredEmit();
-  setTimeout(wait, 50);
-})();
+  (function wait () {
+    if (beginEventLoop)
+      trader.broadcastDeferredEmit();
+    setTimeout(wait, 50);
+  })();
 
+})()

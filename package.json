@@ -26,6 +26,7 @@
     "ccxt": "^1.18.87",
     "co-fs": "^1.2.0",
     "commander": "^2.13.0",
+    "config": "^3.0.1",
     "ethereumjs-abi": "^0.6.5",
     "ethereumjs-util": "^6.0.0",
     "gekko": "0.0.9",
