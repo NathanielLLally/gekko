@@ -79,6 +79,7 @@ class PGAdapter {
     this.exchange = this.plugin_config.exchange;
     this.currency = this.plugin_config.currency;
     this.asset = this.plugin_config.asset;
+    this.base_quote = this.currency + '_' + this.asset;
     this.schema = this.plugin_config.schema;
   };
   done() {
@@ -86,7 +87,7 @@ class PGAdapter {
       this.candleWriterEventCallback();
   }
   tableMoniker() {
-    let naming = [this.exchange, 'candles', this.currency, this.asset];
+    let naming = [this.exchange, 'candles'];
     let d = this.plugin_config.tableNamingDelimiter;
     let r = naming.join(d);
     r.replace(/\-/g, d);
@@ -129,6 +130,7 @@ class PGAdapter {
       "CREATE TABLE IF NOT EXISTS "
       +this.table+` (
           id BIGSERIAL PRIMARY KEY,
+          base_quote VARCHAR NOT NULL,
           start integer UNIQUE,
           open double precision NOT NULL,
           high double precision NOT NULL,

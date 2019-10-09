@@ -24,43 +24,45 @@ var BudFox = function(config) {
 
   // BudFox internal modules:
   
-  this.heart = new Heart;
+  this.heart = new Heart();
+  console.log(heart);
   this.marketDataProvider = new MarketDataProvider(config);
   this.candleManager = new CandleManager;
 
+  var _this = this;
   //    BudFox data flow:
 
   // relay a marketUpdate event
   this.marketDataProvider.on(
     'marketUpdate',
-    e => this.emit('marketUpdate', e)
+    e => _this.emit('marketUpdate', e)
   );
 
   // relay a marketStart event
   this.marketDataProvider.on(
     'marketStart',
-    e => this.emit('marketStart', e)
+    e => _this.emit('marketStart', e)
   );
 
   // Output the candles
   this.candleManager.on(
     'candles',
-    this.pushCandles
+    _this.pushCandles
   );
 
   // on every `tick` retrieve trade data
   this.heart.on(
     'tick',
-    this.marketDataProvider.retrieve
+    _this.marketDataProvider.retrieve
   );
 
   // on new trade data create candles
   this.marketDataProvider.on(
     'trades',
-    this.candleManager.processTrades
+    _this.candleManager.processTrades
   );
 
-  this.heart.pump();
+  _this.heart.pump();
 }
 
 var Readable = require('stream').Readable;
@@ -72,7 +74,8 @@ BudFox.prototype = Object.create(Readable.prototype, {
 BudFox.prototype._read = function noop() {}
 
 BudFox.prototype.pushCandles = function(candles) {
-  _.each(candles, this.push);
+  var _this = this;
+  _.each(candles, _this.push);
 }
 
 module.exports = BudFox;

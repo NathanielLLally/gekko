@@ -17,14 +17,13 @@ var dirs = util.dirs();
 var _ = require('lodash');
 
 var log = require(dirs.core + 'log');
-const async = require('async')
-  , JSON = require('JSON')
+const JSON = require('JSON')
 //  , Promise = require('bluebird')
 ;
 
 class Pipeline {
   constructor(settings) {
-    _.bindAll(this);
+//    _.bindAll(this);
 
     this.mode = settings.mode;
     this.config = {...settings.config};
@@ -49,6 +48,7 @@ class Pipeline {
     this.subscriptions = null;
 
     this.market = null;
+    this.stream = null;
   }
   init() {
     this.GekkoStream = require(dirs.core + 'gekkoStream');
@@ -63,36 +63,19 @@ class Pipeline {
   }
 }
 
-class PipelineFactory {
+/*
+        const plugin = funcAsync( prev_promise , promise ).then(
+           (res) => {
+             return res;
+           }).catch((e) => {
+             let trace = new Error(e);
+             log.error(e, e.fullStack)
+           });
+        return plugin;
+*/
 
- //let result = await Promise.all(_.map(responseJson, addEnabledProperty)); 
-  // Instantiate each enabled plugin
-  // 
-  /*
-  static loadPlugins(self) {
-    let plugins = [];
-    var current = Promise.resolve();
-    Promise.map(Object.keys(self.pluginParameters), (param) => {
-      let p = self.pluginParameters[param];
-      let pc = self.config[p.slug];
-      if (pc && pc.enabled) {
-        current = current.then( () => {
-          return self.pluginHelper.load( p , self.config, self.mode);
-        });
-        return current;
-      }
-    }).map( (plugin) => {
-      console.log("plugin",plugin);
-      plugins.push(plugin);
-      return plugin;
-    }).then((plugin) => {
-      console.log("plugin",plugin);
-      return plugin;
-    }).catch(e => log.error(e));
-    return plugins;
-  }
-  */
-  static loadPlugins(self) {
+class PipelineFactory {
+  static async loadPluginsAsync(self) {
     var promises = Object.keys(self.pluginParameters).map((param) => {
       let p = self.pluginParameters[param];
       let pc = self.config[p.slug];
@@ -109,53 +92,35 @@ class PipelineFactory {
 
       }
     });
-    return promises;
-  }
-
-  /*
-  static loadPlugins(self) {
-//     return new Promise((resolve, reject) => {
-    let p = Object.keys(self.pluginParameters).filter( async (param) => {
-        let r = null;
+    const loadedPlugins = await promises
+      .reduce(async (prevPromise, pr) => {
+        const collection = await prevPromise;
         try {
-          //this is returning a promise from async
-          r = await self.pluginHelper.load(
-            self.pluginParameters[param] , self.config, self.mode
-          )
+          const el = await pr; 
+          if (el != null)
+            collection.push(el)
         } catch(e) {
-
-        };
-      if (r != null) {
-        console.log(r);
-        return r;
-      }
-      })
-    console.log(p);
-    return p;
+          log.error(e);
+        };  
+        return collection;
+      }, Promise.resolve([]));
+    return loadedPlugins;
   }
-  */
-
   // Some plugins emit their own events, store
   // a reference to those plugins.
   static referenceEmitters(self) {
-//    var self = this;
     _.each(self.plugins, function(plugin) {
       if(plugin.meta.emits)
         self.emitters[plugin.meta.slug] = plugin;
     });
-
-    //next();
   }
-
   // Subscribe all plugins to other emitting plugins
   static subscribePlugins(self) {
-//    var self = this;
     // events broadcasted by plugins
     var pluginSubscriptions = _.filter(
       self.subscriptions,
       sub => sub.emitter !== 'market'
     );
-
     // some events can be broadcasted by different
     // plugins, however the pipeline only allows a single
     // emitting plugin for each event to be enabled.
@@ -179,7 +144,6 @@ class PipelineFactory {
         }
       }
     );
-
     // subscribe interested plugins to
     // emitting plugins
     _.each(self.plugins, function(plugin) {
@@ -223,13 +187,11 @@ class PipelineFactory {
 
       });
     });
-
     // events broadcasted by the market
     var marketSubscriptions = _.filter(
       self.subscriptions,
       {emitter: 'market'}
     );
-
     // subscribe plugins to the market
     _.each(self.plugins, function(plugin) {
       _.each(marketSubscriptions, function(sub) {
@@ -241,10 +203,7 @@ class PipelineFactory {
 
       });
     });
-
-    //next();
   }
-
   static prepareMarket(self) {
     if(self.mode === 'backtest' && self.config.backtest.daterange === 'scan')
       require(dirs.core + 'prepareDateRange')();
@@ -255,20 +214,19 @@ class PipelineFactory {
       next();
       */
   }
-
   static setupMarket(self) {
     // load a market based on the config (or fallback to mode)
     let marketType;
     if(self.config.market)
-      marketType = config.market.type;
+      marketType = self.config.market.type;
     else
       marketType = self.mode;
 
     var Market = require(dirs.markets + marketType);
+//    console.log(self.market)
 
     self.market = new Market(self.config);
   }
-
   static subscribePluginsToMarket(self) {
 //    var self = this;
     // events broadcasted by the market
@@ -290,9 +248,7 @@ class PipelineFactory {
 
       });
     });
-
   }
-
   static create(settings) {
 //    console.log('funkyAsync',settings);
     var self = null;
@@ -305,45 +261,31 @@ class PipelineFactory {
 //    console.log('postFunky', self.config);
     return self;
   }
-
   static async createInit(settings) {
-//    console.log('funkyAsync',settings);
     let self = PipelineFactory.create(settings);
-//    console.log('postFunky',self.config);
     self.init();
 
+    self.plugins = await PipelineFactory.loadPluginsAsync(self);
 
-    /*
-    try {
-      await PipelineFactory.loadPlugins(self);
-    } catch (e) {
-      util.die("createInit: "+e, true);
-    }
-    */
-
-//    const p = await Promise.all(PipelineFactory.loadPlugins(self));
-//    self.plugins = 
-//    const p =  await Promise.all(PipelineFactory.loadPlugins(self));
-//    console.log(JSON.stringify(p));
-    self.plugins =  PipelineFactory.loadPlugins(self);
-//    console.log("plugins: ", self.plugins);
     PipelineFactory.referenceEmitters(self);
     PipelineFactory.subscribePlugins(self);
     PipelineFactory.prepareMarket(self);
     PipelineFactory.setupMarket(self);
     PipelineFactory.subscribePluginsToMarket(self);
 
-    var gekkoStream = new self.GekkoStream(self.plugins);
+    console.log("emitters: "+self.emitters);
 
-    self.market
-      .pipe(gekkoStream)
+    (function() {
+      self.stream = new self.GekkoStream(self.plugins);
 
-    // convert JS objects to JSON string
-    // .pipe(new require('stringify-stream')())
-    // output to standard out
-    // .pipe(process.stdout);
-
-    self.market.on('end', gekkoStream.finalize);
+      self.market
+        .pipe(self.stream)
+      // convert JS objects to JSON string
+      // .pipe(new require('stringify-stream')())
+      // output to standard out
+      // .pipe(process.stdout);
+      self.market.on('end', self.stream.finalize);
+    })()
     return self;
   }
 }

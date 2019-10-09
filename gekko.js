@@ -43,7 +43,10 @@ if(util.launchUI()) {
   return require(util.dirs().web + 'server');
 }
 
-const pipeline = require(dirs.core + 'pipeline');
+//const pipeline = require(dirs.core + 'pipeline')
+const PipelineFactory = require(dirs.core + 'pipelineFactory').PipelineFactory
+  , pipeline = require(dirs.core + 'pipelineFactory').pipeline
+;
 const config = util.getConfig();
 const mode = util.gekkoMode();
 
@@ -53,10 +56,14 @@ if(
 )
   util.die('Do you understand what Gekko will do with your money? Read this first:\n\nhttps://github.com/askmike/gekko/issues/201');
 
+/*
+(function(){
+  console.log(this);
+}());
+*/
 // > Ever wonder why fund managers can't beat the S&P 500?
 // > 'Cause they're sheep, and sheep get slaughtered.
-pipeline({
-  config: config,
-  mode: mode
-});
-
+//
+PipelineFactory.createInit({ config: config, mode: mode }).then();
+//
+//pipeline({config:config, mode:mode});

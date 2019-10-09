@@ -234,7 +234,7 @@ var pipeline = (settings) => {
     function() {
 
       var gekkoStream = new GekkoStream(plugins);
-
+      console.log(market);
       market
         .pipe(gekkoStream)
 

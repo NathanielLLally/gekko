@@ -52,7 +52,7 @@ var trader = null;
     //	console.log("capabilities: "+JSON.stringify(trader.broker.capabilities));
 
     //	console.log(trader.broker.capabilities);
-    //  trader.processAdvice(adviceMock);
+//    trader.processAdvice(adviceMock);
     beginEventLoop = true;
   });
 

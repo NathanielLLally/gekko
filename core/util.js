@@ -4,6 +4,7 @@ var path = require('path');
 var fs = require('fs');
 var semver = require('semver');
 var program = require('commander');
+//var EventEmitter = require('events').EventEmitter;
 
 var startTime = moment();
 
@@ -17,28 +18,19 @@ var _args = false;
 
 // helper functions
 var util = {
-  getConfig: function(Pkey) {
-    key = Pkey;
-      
+  getConfig: function() {
     // cache
-    if(_.has(_config, key))
-      return _config[key];
-
     if(_config)
       return _config;
 
-    if(!program.config) {
-        util.die('Please specifiy config file.', true);
-    }
+    if(!program.config)
+        util.die('Please specify a config file.', true);
 
     if(!fs.existsSync(util.dirs().gekko + program.config))
       util.die('Cannot find the specified config file.', true);
 
     _config = require(util.dirs().gekko + program.config);
-    if(_.has(_config, key))
-      return _config[key];
-    else
-      return _config;
+    return _config;
   },
   // overwrite the whole config
   setConfig: function(config) {
@@ -95,7 +87,6 @@ var util = {
     var log = console.log.bind(console);
 
     if(m) {
-      log(new Error().stack);
       if(soft) {
         log('\n ERROR: ' + m + '\n\n');
       } else {
@@ -129,9 +120,6 @@ var util = {
       broker: ROOT + 'exchange/'
     }
   },
-  inspect: function() {
-    require('util').inspect(arguments);
-  },
   inherit: function(dest, source) {
     require('util').inherits(
       dest,
@@ -140,15 +128,8 @@ var util = {
   },
   makeEventEmitter: function(dest) {
     util.inherit(dest, require('events').EventEmitter);
+//    util.inherit(dest, EventEmitter);
   },
-  /*
-  makeGekkoEventEmitter: function(dest) {
-    console.log(dest);
-    console.log(emitter);
-
-    util.inherit(dest, emitter.GekkoEventEmitter);
-  },
-  */
   setGekkoMode: function(mode) {
     _gekkoMode = mode;
   },

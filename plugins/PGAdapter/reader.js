@@ -42,7 +42,7 @@ class PGAreader extends PGAdapter {
     this.handlePool.connect((err,client,done) => {
       var query = client.query(new Query(`
     SELECT start from ${this.table}
-    WHERE start <= ${to} AND start >= ${from}
+    WHERE start <= ${to} AND start >= ${from} AND base_quote = ${this.base_quote}
     ORDER BY start DESC
     `), function (err, result) {
       if (err) {

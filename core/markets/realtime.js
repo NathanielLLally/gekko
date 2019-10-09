@@ -16,4 +16,4 @@ const error = exchangeChecker.cantMonitor(config.watch);
 if(error)
   util.die(error, true);
 
-module.exports = require(dirs.budfox + 'budfox');
+module.exports = require(dirs.budfox + 'budfoxClass');

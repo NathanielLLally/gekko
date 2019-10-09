@@ -1,4 +1,7 @@
-const Gdax = require('gdax');
+'use strict';
+function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
+var GeminiAPI = _interopDefault(require('gemini-api'));
+
 const _ = require('lodash');
 const moment = require('moment');
 
@@ -23,6 +26,7 @@ const Trader = function(config) {
   this.api_url = 'https://api.gemini.com';
   this.api_sandbox_url = 'https://api-sandbox.gemini.com';
 
+
   if (_.isObject(config)) {
     this.key = config.key;
     this.secret = config.secret;
@@ -35,9 +39,18 @@ const Trader = function(config) {
     if (config.sandbox) {
       this.use_sandbox = config.sandbox;
     }
+    let key = this.key, secret = this.secret;
+    this.restAPI = new GeminiAPI({ key, secret, sandbox: this.use_sandbox });
+    this.websocket = new GeminiAPI.WebsocketClient({ key, secret, sandbox: this.use_sandbox });
+  };
 
-  }
-
+  /*
+   websocketClient.openMarketSocket('btcusd', () => {
+  websocketClient.addMarketMessageListener(data =>
+    doSomethingCool(data)
+  );
+});
+*/
 };
 
 const recoverableErrors = [
@@ -103,6 +116,18 @@ Trader.prototype.getPortfolio = function(callback) {
 };
 
 Trader.prototype.getTicker = function(callback) {
+  var args = _.toArray(arguments);
+  // the function that will handle the API callback
+  var process = function(err, data, body) {
+    if (err)
+        return this.retry(this.getTicker(args));
+
+    // whenever we reach this point we have valid
+    // data, the callback is still the same since
+    // we are inside the same javascript scope.
+    callback(err, {bid: +data.bid, ask: +data.ask})
+  }.bind(this);
+  this.restAPI.getTicker(this.pair, process);
 };
 
 Trader.prototype.getFee = function(callback) {

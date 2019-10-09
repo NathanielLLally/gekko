@@ -15,7 +15,7 @@ var dirs = util.dirs();
 var providerName = config.watch.exchange.toLowerCase();
 var providerPath = util.dirs().gekko + 'exchanges/' + providerName;
 
-return; // TEMP
+//return; // TEMP
 
 var mf;
 

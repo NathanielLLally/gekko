@@ -10,7 +10,6 @@ const util = require(__dirname + '/core/util')
   , Trader = require(dirs.plugins + 'trader/trader')
   , Checker = require(dirs.broker + 'exchangeChecker')
   , JSON = require('JSON')
-  , async = require('async')
 
 require('./exchange/dependencyCheck');
 

@@ -76,7 +76,7 @@ class Trader extends emitter.GekkoEventEmitter {
     try {
       this.broker = await BrokerFactory.create(this.brokerConfig);
     } catch(e) {
-      util.die(e.message);
+      util.die(e, false);
     }
 
     if(!this.broker.capabilities.gekkoBroker) {

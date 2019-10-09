@@ -98,7 +98,7 @@ Trader.prototype.getTicker = function(callback) {
     // we are inside the same javascript scope.
     callback(err, {bid: +data.bid, ask: +data.ask})
   }.bind(this);
-  this.gemini.ticker(this.pair, process);
+  this.restAPI.ticker(this.pair, process);
 }
 
 // This assumes that only limit orders are being placed, so fees are the

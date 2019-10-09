@@ -63,9 +63,9 @@ class PGAwriter extends PGAdapter {
     BEGIN; 
     LOCK TABLE ${this.table} IN SHARE ROW EXCLUSIVE MODE; 
     INSERT INTO ${this.table}
-    (start, open, high,low, close, vwp, volume, trades) 
+    (base_quote, start, open, high,low, close, vwp, volume, trades) 
     VALUES 
-    (${candle.start.unix()}, ${candle.open}, ${candle.high}, ${candle.low}, ${candle.close}, ${candle.vwp}, ${candle.volume}, ${candle.trades}) 
+    (${this.base_quote}, ${candle.start.unix()}, ${candle.open}, ${candle.high}, ${candle.low}, ${candle.close}, ${candle.vwp}, ${candle.volume}, ${candle.trades}) 
     ON CONFLICT ON CONSTRAINT ${this.table}_start_key
     DO NOTHING; 
     COMMIT; 
