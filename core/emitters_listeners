@@ -1,0 +1,140 @@
+./pipelineFactory.js:    // all emitting plugins
+./pipelineFactory.js:    this.emitters = {};
+./pipelineFactory.js:  // Some plugins emit their own events, store
+./pipelineFactory.js:      if(plugin.meta.emits)
+./pipelineFactory.js:        self.emitters[plugin.meta.slug] = plugin;
+./pipelineFactory.js:  // Subscribe all plugins to other emitting plugins
+./pipelineFactory.js:      sub => sub.emitter !== 'market'
+./pipelineFactory.js:    // emitting plugin for each event to be enabled.
+./pipelineFactory.js:      pluginSubscriptions.filter(s => _.isArray(s.emitter)),
+./pipelineFactory.js:        subscription.emitters = subscription.emitter;
+./pipelineFactory.js:        var singleEventEmitters = subscription.emitter
+./pipelineFactory.js:          subscription.emitter = _.first(singleEventEmitters);
+./pipelineFactory.js:    // emitting plugins
+./pipelineFactory.js:          if(!self.emitters[sub.emitter]) {
+./pipelineFactory.js:              let emitterMessage;
+./pipelineFactory.js:              if(sub.emitters) {
+./pipelineFactory.js:                emitterMessage = 'all of the emitting plugins [ ';
+./pipelineFactory.js:                emitterMessage += sub.emitters.join(', ');
+./pipelineFactory.js:                emitterMessage += ' ] are disabled.';
+./pipelineFactory.js:                emitterMessage += 'the emitting plugin (' + sub.emitter;
+./pipelineFactory.js:                emitterMessage += ')is disabled.'
+./pipelineFactory.js:                emitterMessage,
+./pipelineFactory.js:          self.emitters[sub.emitter]
+./pipelineFactory.js:            .on(sub.event,
+./pipelineFactory.js:      {emitter: 'market'}
+./pipelineFactory.js:      {emitter: 'market'}
+./pipelineFactory.js:          self.market.on(sub.event, plugin[sub.handler]);
+./pipelineFactory.js:    console.log("emitters: "+self.emitters);
+./pipelineFactory.js:      self.market.on('end', self.stream.finalize);
+./markets/leech.js:Market.prototype._read = _.once(function() {
+./markets/backtest.js:Market.prototype._read = _.once(function() {
+./markets/importer.js:  this.fetcher.bus.on(
+./markets/importer.js:  this.fetcher.bus.on(
+./markets/importer.js:  this.tradeBatcher.on(
+./markets/importer.js:  this.candleManager.on(
+./markets/importer.js:    this.emit('end');
+./gekkoStream.js:    .filter(p => p.meta.emits);
+./emitterClass.js:// Gekko uses a custom event emitter within the GekkoStream (the plugins) to guarantee
+./emitterClass.js:    this.emit(event.name, event.payload);
+./pluginHelper.js:var Emitter = require('./emitter');
+./pipeline.js:  // all emitting plugins
+./pipeline.js:  var emitters = {};
+./pipeline.js:  // Some plugins emit their own events, store
+./pipeline.js:      if(plugin.meta.emits)
+./pipeline.js:        emitters[plugin.meta.slug] = plugin;
+./pipeline.js:  // Subscribe all plugins to other emitting plugins
+./pipeline.js:      sub => sub.emitter !== 'market'
+./pipeline.js:    // emitting plugin for each event to be enabled.
+./pipeline.js:      pluginSubscriptions.filter(s => _.isArray(s.emitter)),
+./pipeline.js:        subscription.emitters = subscription.emitter;
+./pipeline.js:        var singleEventEmitters = subscription.emitter
+./pipeline.js:          subscription.emitter = _.first(singleEventEmitters);
+./pipeline.js:    // emitting plugins
+./pipeline.js:          if(!emitters[sub.emitter]) {
+./pipeline.js:              let emitterMessage;
+./pipeline.js:              if(sub.emitters) {
+./pipeline.js:                emitterMessage = 'all of the emitting plugins [ ';
+./pipeline.js:                emitterMessage += sub.emitters.join(', ');
+./pipeline.js:                emitterMessage += ' ] are disabled.';
+./pipeline.js:                emitterMessage += 'the emitting plugin (' + sub.emitter;
+./pipeline.js:                emitterMessage += ')is disabled.'
+./pipeline.js:                emitterMessage,
+./pipeline.js:          emitters[sub.emitter]
+./pipeline.js:            .on(sub.event,
+./pipeline.js:      {emitter: 'market'}
+./pipeline.js:      {emitter: 'market'}
+./pipeline.js:          market.on(sub.event, plugin[sub.handler]);
+./pipeline.js:      market.on('end', gekkoStream.finalize);
+./emitter.js:// Gekko uses a custom event emitter within the GekkoStream (the plugins) to guarantee
+./emitter.js:  this.emit(event.name, event.payload);
+./pluginUtil.js:var Emitter = require('./emitter');
+./budfox/budfox.js:  this.marketDataProvider.on(
+./budfox/budfox.js:    e => _this.emit('marketUpdate', e)
+./budfox/budfox.js:  this.marketDataProvider.on(
+./budfox/budfox.js:    e => _this.emit('marketStart', e)
+./budfox/budfox.js:  this.candleManager.on(
+./budfox/budfox.js:  this.heart.on(
+./budfox/budfox.js:  this.marketDataProvider.on(
+./budfox/heartClass.js:// The heart schedules and emit ticks every 20 seconds.
+./budfox/heartClass.js://    this.emit = this.emit.bind(this)
+./budfox/heartClass.js://    this.emit.bind(this, "tick")
+./budfox/heartClass.js:  //setInterval(this.emit.bind(this, "tick"), 1000);
+./budfox/heartClass.js:    _this.emit('tick');
+./budfox/heartClass.js://    this.emit.bind(this, "tick")
+./budfox/heartClass.js:    this.emit.bind(this, "tick")
+./budfox/heartClass.js:     _this.emit("tick");
+./budfox/tradeBatcher.js:  this.emit('new batch', {
+./budfox/candleManager.js:// The candleManager consumes trades and emits:
+./budfox/candleManager.js:    .on('candles', this.relayCandles);
+./budfox/candleManager.js:  this.emit('candles', candles);
+./budfox/marketFetcher.js:// market data at the exchange on interval. It will emit
+./budfox/marketFetcher.js:  this.batcher.on('new batch', this.relayTrades);
+./budfox/marketFetcher.js:  this.emit('trades batch', batch);
+./budfox/marketDataProvider.js:// The market data provider will fetch data from a datasource on tick. It emits:
+./budfox/marketDataProvider.js:    .on('trades batch', this.relayTrades);
+./budfox/marketDataProvider.js:  this.emit('marketUpdate', batch.last.date);
+./budfox/marketDataProvider.js:  this.emit('trades', batch);
+./budfox/marketDataProvider.js:Manager.prototype.sendMarketStart = _.once(function(batch) {
+./budfox/marketDataProvider.js:  this.emit('marketStart', batch.first.date);
+./budfox/heart.js:// The heart schedules and emit ticks every 20 seconds.
+./budfox/heart.js://setInterval(this.emit.bind(this, "tick"), 1000);
+./budfox/heart.js:  _this.emit('tick');
+./budfox/heart.js://    this.emit.bind(this, "tick")
+./budfox/heart.js:  _this.emit.bind(_this, "tick")
+./budfox/heart.js: // _.defer(this.emit.bind(this, "tick"));
+./budfox/heart.js://  this.emit.bind(this, "tick");
+./budfox/budfoxClass.js:       this.heart.emit = this.heart.emit.bind(this.heart, "tick");
+./budfox/budfoxClass.js://       this.heart.pump = this.heart.emit.bind(this.heart);
+./budfox/budfoxClass.js://  this.emit = this.emit.bind(this);
+./budfox/budfoxClass.js:    this.marketDataProvider.on(
+./budfox/budfoxClass.js:      e => this.emit('marketUpdate', e)
+./budfox/budfoxClass.js:    this.marketDataProvider.on(
+./budfox/budfoxClass.js:      e => this.emit('marketUpdate', e)
+./budfox/budfoxClass.js:    this.candleManager.on(
+./budfox/budfoxClass.js:    this.heart.on(
+./budfox/budfoxClass.js:    this.marketDataProvider.on(
+./budfox/candleCreator.js:  this.emit('candles', candles);
+./budfox/candleCreator.js:  // than the previous emitted candle
+./tools/candleLoader.js:  next = _.once(_next);
+./tools/candleLoader.js:    .on('candle', handleBatchedCandles);
+./pluginAsyncHelper.js:var Emitter = require('./emitter');
+./candleBatcher.js:// 1m candles as input and emits
+./candleBatcher.js:  this.emitted = 0;
+./candleBatcher.js:  return this.emitted;
+./candleBatcher.js:  this.emitted++;
+./candleBatcher.js:    candle => this.emit('candle', candle)
+./workers/loadCandles/parent.js:  const done = _.once(callback);
+./workers/loadCandles/parent.js:  child.on('message', function(m) {
+./workers/loadCandles/parent.js:  child.on('exit', code => {
+./workers/loadCandles/child.js:process.on('message', (m) => {
+./workers/loadCandles/child.js:process.on('disconnect', function() {
+./workers/pipeline/parent.js:  child.on('message', function(m) {
+./workers/pipeline/parent.js:  child.on('exit', handle.exit);
+./workers/pipeline/child.js:process.on('message', function(m) {
+./workers/pipeline/child.js:process.on('disconnect', function() {
+./workers/pipeline/child.js:  .on('unhandledRejection', (message, p) => {
+./workers/pipeline/child.js:  .on('uncaughtException', err => {
+./workers/dateRangeScan/parent.js:  task.once('ranges', ranges => {
+./workers/dateRangeScan/parent.js:  task.on('exit', code => {
+./workers/dateRangeScan/child.js:ipc.on('start', config => {

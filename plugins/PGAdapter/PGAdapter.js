@@ -120,13 +120,14 @@ class PGAdapter {
           log.debug("database already exists");
         }
 
-        log.debug("Postgres connection pool is ready, db " + this.config.PGAdapter.database);
-        this.initTable();
+        log.debug("creating database with tables\nPostgres connection pool is ready, db " + this.config.PGAdapter.database);
+        this.initTables();
         this.done();
   })
   }
   initTables() {
     const query =
+//      "CREATE TABLE "
       "CREATE TABLE IF NOT EXISTS "
       +this.table+` (
           id BIGSERIAL PRIMARY KEY,
@@ -143,11 +144,15 @@ class PGAdapter {
 
     this.handlePool.query(query, (err) => {
         if(err) {
-        util.die(err);
+          util.die(err);
+        } else {
+          log.debug("created database table(s) [" + this.table + "]");
         }
         });
   };
 
+  //look for existence, failing check- create both dB and tables
+  //
   checkExists(table) {
     // We need to check if the db exists first.
     // This requires connecting to the default
@@ -156,7 +161,7 @@ class PGAdapter {
     this.handlePoolPostgres.connect((err, handle, done) => {
         if(err) { throw(err); }
 
-        log.debug("Check database exists: " + this.config.PGAdapter.database + " tables "+table+";");
+        log.debug("Check exists: database [" + this.config.PGAdapter.database + "] tables ["+table+"];");
         handle.query("select count(*) from pg_catalog.pg_database where datname = $1", [this.config.PGAdapter.database],
             (err, res) => {
             if(err) { throw(err); }
@@ -164,8 +169,8 @@ class PGAdapter {
             if(res.rows[0].count !== '0') {
               // database exists
               log.debug("Database exists: " + this.config.PGAdapter.database);
-              log.debug("Postgres connection pool is ready, db " + this.config.PGAdapter.database);
               this.initTables();
+              //log.debug("Postgres connection pool is ready, db [" + this.config.PGAdapter.database+"]");
               done();
               return;
             }

@@ -48,7 +48,7 @@ if(cannotLoad) {
 let mc = config;
         mc.PGAdapter.asset = 'BTC';
         mc.PGAdapter.currency = 'USD';
-        mc.PGAdapter.exchange = 'gdax';
+        mc.PGAdapter.exchange = 'gemini';
 
 //test plugin load, dB check upon load
 var pluginMeta =  _.find(pluginParameters, (o) => {return o.slug == 'candleWriter'})
