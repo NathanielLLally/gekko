@@ -4,3 +4,7 @@ DIR=/home/nathaniel/src/git/gekko
 cd $DIR
 #node ./gekko.js --config config.js 2>&1 > headless.log
 #node ./gekko.js --config config.js --ui 2>&1 > ui.log
+
+#// candles are (15 minutes)
+#// importer mode, see PGAdapter create tables exchange_candles
+#node gekko.js --config configMultiPipeline.js -i

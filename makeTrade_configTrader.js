@@ -36,7 +36,7 @@ log.debug("node version :"+util.getRequiredNodeVersion());
 const adviceMock = {
 	recommendation: 'long',
 									id: '1',
-	confidence: 0.2,
+	confidence: 0.0,
 }
 
 

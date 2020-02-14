@@ -18,7 +18,7 @@ const CONFIG = {
   //
   ui: { 
     ssl: true,
-    host: 'gekko.ewb.ai',
+    host: 'cessna.ewb.ai',
     port: 443,
     path: '/'
   },

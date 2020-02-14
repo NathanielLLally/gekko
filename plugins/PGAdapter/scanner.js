@@ -20,6 +20,7 @@ module.exports = done => {
       util.die(err);
     }
 
+    throw new Error('scan database')
     var sql = "select datname from pg_database";
 
     sql = "select datname from pg_database where datname='" + PGAc.database + "'";
